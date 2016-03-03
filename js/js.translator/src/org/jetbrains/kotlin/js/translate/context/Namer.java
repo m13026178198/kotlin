@@ -1,5 +1,5 @@
 /*
- * Copyright 2010-2015 JetBrains s.r.o.
+ * Copyright 2010-2016 JetBrains s.r.o.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -434,13 +434,14 @@ public final class Namer {
             case ENUM_CLASS:
                 return enumClassCreationMethodReference();
             case ENUM_ENTRY:
-            case OBJECT:
                 return objectCreationMethodReference();
+            case OBJECT:
+                return DescriptorUtils.isCompanionObject(descriptor) || DescriptorUtils.getContainingClass(descriptor) == null ?
+                     objectCreationMethodReference() : classCreationMethodReference();
             case ANNOTATION_CLASS:
             case CLASS:
-                return DescriptorUtils.isAnonymousObject(descriptor)
-                       ? objectCreationMethodReference()
-                       : classCreationMethodReference();
+                return DescriptorUtils.getContainingClass(descriptor) == null && DescriptorUtils.isAnonymousObject(descriptor) ?
+                       objectCreationMethodReference() : classCreationMethodReference();
             default:
                 throw new UnsupportedOperationException("Unsupported class kind: " + descriptor);
         }
