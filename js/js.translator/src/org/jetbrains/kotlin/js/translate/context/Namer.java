@@ -434,14 +434,11 @@ public final class Namer {
             case ENUM_CLASS:
                 return enumClassCreationMethodReference();
             case ENUM_ENTRY:
-                return objectCreationMethodReference();
             case OBJECT:
-                return DescriptorUtils.isCompanionObject(descriptor) || DescriptorUtils.getContainingClass(descriptor) == null ?
-                     objectCreationMethodReference() : classCreationMethodReference();
+                return objectCreationMethodReference();
             case ANNOTATION_CLASS:
             case CLASS:
-                return DescriptorUtils.getContainingClass(descriptor) == null && DescriptorUtils.isAnonymousObject(descriptor) ?
-                       objectCreationMethodReference() : classCreationMethodReference();
+                return classCreationMethodReference();
             default:
                 throw new UnsupportedOperationException("Unsupported class kind: " + descriptor);
         }

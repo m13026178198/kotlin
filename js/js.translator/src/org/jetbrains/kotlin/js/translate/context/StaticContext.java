@@ -588,10 +588,7 @@ public final class StaticContext {
                     if (!(descriptor instanceof ClassDescriptor)) {
                         return null;
                     }
-                    DeclarationDescriptor container = descriptor.getContainingDeclaration();
-                    if (container != null && !(container instanceof ClassDescriptor)) {
-                        container = DescriptorUtils.getContainingClass(container);
-                    }
+                    DeclarationDescriptor container = getEnclosingNonSingleton(descriptor.getContainingDeclaration());
                     if (container == null) {
                         return null;
                     }
@@ -639,6 +636,14 @@ public final class StaticContext {
             addRule(nestedClassesHaveContainerQualifier);
             addRule(localClassesHavePackageQualifier);
         }
+    }
+
+    @Nullable
+    private static ClassDescriptor getEnclosingNonSingleton(@NotNull  DeclarationDescriptor descriptor) {
+        while (descriptor != null && (!(descriptor instanceof ClassDescriptor) || DescriptorUtils.isObject(descriptor))) {
+            descriptor = descriptor.getContainingDeclaration();
+        }
+        return (ClassDescriptor) descriptor;
     }
 
     private static JsExpression applySideEffects(JsExpression expression, DeclarationDescriptor descriptor) {

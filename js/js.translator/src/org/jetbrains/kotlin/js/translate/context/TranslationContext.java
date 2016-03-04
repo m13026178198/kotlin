@@ -162,8 +162,7 @@ public class TranslationContext {
 
     @NotNull
     private TranslationContext innerWithAliasingContext(AliasingContext aliasingContext) {
-        return new TranslationContext(this, this.staticContext, this.dynamicContext, aliasingContext, this.usageTracker, null,
-                                      this.declarationDescriptor);
+        return new TranslationContext(this, staticContext, dynamicContext, aliasingContext, usageTracker, null, declarationDescriptor);
     }
 
     @NotNull
