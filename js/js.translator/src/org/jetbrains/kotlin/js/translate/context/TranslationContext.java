@@ -474,7 +474,11 @@ public class TranslationContext {
     public JsExpression getParameterNameRefForInvocation(@NotNull DeclarationDescriptor descriptor) {
         JsExpression alias = getAliasForDescriptor(descriptor);
         if (alias != null) return alias;
-        if (descriptor instanceof ReceiverParameterDescriptor) return JsLiteral.THIS;
+
+        if (descriptor instanceof ReceiverParameterDescriptor) {
+            return JsLiteral.THIS;
+        }
+
         return getNameForDescriptor(descriptor).makeRef();
     }
 
