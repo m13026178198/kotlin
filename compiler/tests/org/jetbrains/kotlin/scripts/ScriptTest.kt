@@ -72,6 +72,13 @@ class ScriptTest {
         aClass!!.getConstructor(cl.java).newInstance(TestParamClass(4))
     }
 
+    @Test
+    fun testScriptWithBaseClass() {
+        val aClass = compileScript("fib_dsl.kts", ReflectedSuperclassTestScriptDefinition(".kts", numIntParam(), TestDSL::class), runIsolated = false)
+        Assert.assertNotNull(aClass)
+        aClass!!.getConstructor(Integer.TYPE).newInstance(4)
+    }
+
     private fun compileScript(
             scriptPath: String,
             scriptDefinition: KotlinScriptDefinition,

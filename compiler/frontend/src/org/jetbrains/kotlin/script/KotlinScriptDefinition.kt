@@ -34,6 +34,7 @@ import kotlin.reflect.KClass
 
 interface KotlinScriptDefinition {
     fun getScriptParameters(scriptDescriptor: ScriptDescriptor): List<ScriptParameter>
+    fun getScriptSuperclasses(scriptDescriptor: ScriptDescriptor): List<KotlinType>
     fun isScript(file: PsiFile): Boolean
     fun getScriptName(script: KtScript): Name
 }
@@ -57,6 +58,8 @@ object StandardScriptDefinition : KotlinScriptDefinition {
         val kc: KClass<StandardScriptDefinition> = StandardScriptDefinition::class
         return makeStringListScriptParameters(scriptDescriptor, ARGS_NAME)
     }
+
+    override fun getScriptSuperclasses(scriptDescriptor: ScriptDescriptor): List<KotlinType> = emptyList()
 }
 
 fun makeStringListScriptParameters(scriptDescriptor: ScriptDescriptor, propertyName: Name): List<ScriptParameter> {
