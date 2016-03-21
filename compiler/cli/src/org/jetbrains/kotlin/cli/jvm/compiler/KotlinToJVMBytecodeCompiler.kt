@@ -274,17 +274,24 @@ object KotlinToJVMBytecodeCompiler {
     private fun getScriptConstructor(scriptClass: Class<*>): Constructor<*> =
             scriptClass.getConstructor(Array<String>::class.java)
 
-    fun compileScript(
-            configuration: CompilerConfiguration,
-            paths: KotlinPaths,
+    fun compileScript( configuration: CompilerConfiguration, paths: KotlinPaths, environment: KotlinCoreEnvironment): Class<*>? =
+            compileScript( {
+                               val classPaths = arrayListOf(paths.runtimePath.toURI().toURL())
+                               configuration.jvmClasspathRoots.mapTo(classPaths) { it.toURI().toURL() }
+                               URLClassLoader(classPaths.toTypedArray())
+                           },
+                           environment)
+
+    fun compileScript( parentClassLoader: ClassLoader, environment: KotlinCoreEnvironment): Class<*>? = compileScript({ parentClassLoader }, environment)
+
+    private inline fun compileScript(
+            makeParentClassLoader: () -> ClassLoader,
             environment: KotlinCoreEnvironment): Class<*>? {
         val state = analyzeAndGenerate(environment, GenerationStateEventCallback.DO_NOTHING) ?: return null
 
         val classLoader: GeneratedClassLoader
         try {
-            val classPaths = arrayListOf(paths.runtimePath.toURI().toURL())
-            configuration.jvmClasspathRoots.mapTo(classPaths) { it.toURI().toURL() }
-            classLoader = GeneratedClassLoader(state.factory, URLClassLoader(classPaths.toTypedArray(), null))
+            classLoader = GeneratedClassLoader(state.factory, makeParentClassLoader(), null)
 
             val script = environment.getSourceFiles()[0].script
             assert(script != null) { "Script must be parsed" }
@@ -294,7 +301,6 @@ object KotlinToJVMBytecodeCompiler {
         catch (e: Exception) {
             throw RuntimeException("Failed to evaluate script: " + e, e)
         }
-
     }
 
     fun analyzeAndGenerate(

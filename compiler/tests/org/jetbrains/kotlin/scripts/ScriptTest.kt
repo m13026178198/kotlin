@@ -16,17 +16,17 @@
 
 package org.jetbrains.kotlin.scripts
 
-import com.intellij.openapi.Disposable
 import com.intellij.openapi.util.Disposer
 import org.jetbrains.kotlin.cli.common.CLIConfigurationKeys
 import org.jetbrains.kotlin.cli.common.messages.*
 import org.jetbrains.kotlin.cli.jvm.compiler.EnvironmentConfigFiles
 import org.jetbrains.kotlin.cli.jvm.compiler.KotlinCoreEnvironment
 import org.jetbrains.kotlin.cli.jvm.compiler.KotlinToJVMBytecodeCompiler
+import org.jetbrains.kotlin.cli.jvm.config.addJvmClasspathRoot
 import org.jetbrains.kotlin.codegen.CompilationException
 import org.jetbrains.kotlin.config.CommonConfigurationKeys
 import org.jetbrains.kotlin.config.CompilerConfiguration
-import org.jetbrains.kotlin.config.*
+import org.jetbrains.kotlin.config.addKotlinSourceRoot
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.resolve.jvm.platform.JvmPlatform
 import org.jetbrains.kotlin.script.KotlinScriptDefinition
@@ -34,18 +34,16 @@ import org.jetbrains.kotlin.script.ScriptParameter
 import org.jetbrains.kotlin.test.ConfigurationKind
 import org.jetbrains.kotlin.test.KotlinTestUtils
 import org.jetbrains.kotlin.test.TestJdkKind
-import org.jetbrains.kotlin.utils.KotlinPaths
 import org.jetbrains.kotlin.utils.PathUtil
 import org.junit.Assert
 import org.junit.Test
-
-import java.util.Collections
+import java.io.File
 
 class ScriptTest {
     @Test
     @Throws(Exception::class)
     fun testScript() {
-        val aClass = compileScript("fib.kts", TestScriptDefinition(".kts", numIntParam()))
+        val aClass = compileScript("fib.kts", SimpleParamsTestScriptDefinition(".kts", numIntParam()))
         Assert.assertNotNull(aClass)
         aClass!!.getConstructor(Integer.TYPE).newInstance(4)
     }
@@ -53,7 +51,7 @@ class ScriptTest {
     @Test
     @Throws(Exception::class)
     fun testScriptWithPackage() {
-        val aClass = compileScript("fib.pkg.kts", TestScriptDefinition(".kts", numIntParam()))
+        val aClass = compileScript("fib.pkg.kts", SimpleParamsTestScriptDefinition(".kts", numIntParam()))
         Assert.assertNotNull(aClass)
         aClass!!.getConstructor(Integer.TYPE).newInstance(4)
     }
@@ -61,14 +59,24 @@ class ScriptTest {
     @Test
     @Throws(Exception::class)
     fun testScriptWithScriptDefinition() {
-        val aClass = compileScript("fib.fib.kt", TestScriptDefinition(".fib.kt", numIntParam()))
+        val aClass = compileScript("fib.fib.kt", SimpleParamsTestScriptDefinition(".fib.kt", numIntParam()))
         Assert.assertNotNull(aClass)
         aClass!!.getConstructor(Integer.TYPE).newInstance(4)
     }
 
+    @Test
+    fun testScriptWithClassParameter() {
+        val cl = TestParamClass::class
+        val aClass = compileScript("fib_cp.kts", ReflectedParamClassTestScriptDefinition(".kts", "param", cl), runIsolated = false)
+        Assert.assertNotNull(aClass)
+        aClass!!.getConstructor(cl.java).newInstance(TestParamClass(4))
+    }
+
     private fun compileScript(
             scriptPath: String,
-            scriptDefinition: KotlinScriptDefinition): Class<*>? {
+            scriptDefinition: KotlinScriptDefinition,
+            runIsolated: Boolean = true): Class<*>?
+    {
         val paths = PathUtil.getKotlinPathsForDistDirectory()
         val messageCollector = PrintingMessageCollector.PLAIN_TEXT_TO_SYSTEM_ERR
 
@@ -78,11 +86,14 @@ class ScriptTest {
             configuration.put(CLIConfigurationKeys.MESSAGE_COLLECTOR_KEY, messageCollector)
             configuration.addKotlinSourceRoot("compiler/testData/script/" + scriptPath)
             configuration.add(CommonConfigurationKeys.SCRIPT_DEFINITIONS_KEY, scriptDefinition)
+            if (!runIsolated)
+                configuration.addCurrentClasspathAsRoots()
 
             val environment = KotlinCoreEnvironment.createForProduction(rootDisposable, configuration, EnvironmentConfigFiles.JVM_CONFIG_FILES)
 
             try {
-                return KotlinToJVMBytecodeCompiler.compileScript(configuration, paths, environment)
+                return if (runIsolated) KotlinToJVMBytecodeCompiler.compileScript(configuration, paths, environment)
+                else KotlinToJVMBytecodeCompiler.compileScript(this.javaClass.classLoader, environment)
             }
             catch (e: CompilationException) {
                 messageCollector.report(CompilerMessageSeverity.EXCEPTION, OutputMessageUtil.renderException(e),
@@ -100,7 +111,16 @@ class ScriptTest {
         }
     }
 
+    private fun CompilerConfiguration.addCurrentClasspathAsRoots() {
+        System.getProperty("java.class.path")?.let {
+            it.split(String.format("\\%s", File.pathSeparatorChar).toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
+                    .forEach { addJvmClasspathRoot(File(it)) }
+        }
+    }
+
     private fun numIntParam(): List<ScriptParameter> {
         return listOf(ScriptParameter(Name.identifier("num"), JvmPlatform.builtIns.intType))
     }
 }
+
+class TestParamClass(val memberNum: Int)
