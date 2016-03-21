@@ -14,97 +14,93 @@
  * limitations under the License.
  */
 
-package org.jetbrains.kotlin.scripts;
+package org.jetbrains.kotlin.scripts
 
-import com.intellij.openapi.Disposable;
-import com.intellij.openapi.util.Disposer;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
-import org.jetbrains.kotlin.cli.common.CLIConfigurationKeys;
-import org.jetbrains.kotlin.cli.common.messages.*;
-import org.jetbrains.kotlin.cli.jvm.compiler.EnvironmentConfigFiles;
-import org.jetbrains.kotlin.cli.jvm.compiler.KotlinCoreEnvironment;
-import org.jetbrains.kotlin.cli.jvm.compiler.KotlinToJVMBytecodeCompiler;
-import org.jetbrains.kotlin.codegen.CompilationException;
-import org.jetbrains.kotlin.config.CommonConfigurationKeys;
-import org.jetbrains.kotlin.config.CompilerConfiguration;
-import org.jetbrains.kotlin.config.ContentRootsKt;
-import org.jetbrains.kotlin.name.Name;
-import org.jetbrains.kotlin.resolve.jvm.platform.JvmPlatform;
-import org.jetbrains.kotlin.script.KotlinScriptDefinition;
-import org.jetbrains.kotlin.script.ScriptParameter;
-import org.jetbrains.kotlin.test.ConfigurationKind;
-import org.jetbrains.kotlin.test.KotlinTestUtils;
-import org.jetbrains.kotlin.test.TestJdkKind;
-import org.jetbrains.kotlin.utils.KotlinPaths;
-import org.jetbrains.kotlin.utils.PathUtil;
-import org.junit.Assert;
-import org.junit.Test;
+import com.intellij.openapi.Disposable
+import com.intellij.openapi.util.Disposer
+import org.jetbrains.kotlin.cli.common.CLIConfigurationKeys
+import org.jetbrains.kotlin.cli.common.messages.*
+import org.jetbrains.kotlin.cli.jvm.compiler.EnvironmentConfigFiles
+import org.jetbrains.kotlin.cli.jvm.compiler.KotlinCoreEnvironment
+import org.jetbrains.kotlin.cli.jvm.compiler.KotlinToJVMBytecodeCompiler
+import org.jetbrains.kotlin.codegen.CompilationException
+import org.jetbrains.kotlin.config.CommonConfigurationKeys
+import org.jetbrains.kotlin.config.CompilerConfiguration
+import org.jetbrains.kotlin.config.*
+import org.jetbrains.kotlin.name.Name
+import org.jetbrains.kotlin.resolve.jvm.platform.JvmPlatform
+import org.jetbrains.kotlin.script.KotlinScriptDefinition
+import org.jetbrains.kotlin.script.ScriptParameter
+import org.jetbrains.kotlin.test.ConfigurationKind
+import org.jetbrains.kotlin.test.KotlinTestUtils
+import org.jetbrains.kotlin.test.TestJdkKind
+import org.jetbrains.kotlin.utils.KotlinPaths
+import org.jetbrains.kotlin.utils.PathUtil
+import org.junit.Assert
+import org.junit.Test
 
-import java.util.Collections;
-import java.util.List;
+import java.util.Collections
 
-public class ScriptTest {
+class ScriptTest {
     @Test
-    public void testScript() throws Exception {
-        Class<?> aClass = compileScript("fib.kts", new TestScriptDefinition(".kts", numIntParam()));
-        Assert.assertNotNull(aClass);
-        aClass.getConstructor(int.class).newInstance(4);
+    @Throws(Exception::class)
+    fun testScript() {
+        val aClass = compileScript("fib.kts", TestScriptDefinition(".kts", numIntParam()))
+        Assert.assertNotNull(aClass)
+        aClass!!.getConstructor(Integer.TYPE).newInstance(4)
     }
 
     @Test
-    public void testScriptWithPackage() throws Exception {
-        Class<?> aClass = compileScript("fib.pkg.kts", new TestScriptDefinition(".kts", numIntParam()));
-        Assert.assertNotNull(aClass);
-        aClass.getConstructor(int.class).newInstance(4);
+    @Throws(Exception::class)
+    fun testScriptWithPackage() {
+        val aClass = compileScript("fib.pkg.kts", TestScriptDefinition(".kts", numIntParam()))
+        Assert.assertNotNull(aClass)
+        aClass!!.getConstructor(Integer.TYPE).newInstance(4)
     }
 
     @Test
-    public void testScriptWithScriptDefinition() throws Exception {
-        Class<?> aClass = compileScript("fib.fib.kt", new TestScriptDefinition(".fib.kt", numIntParam()));
-        Assert.assertNotNull(aClass);
-        aClass.getConstructor(int.class).newInstance(4);
+    @Throws(Exception::class)
+    fun testScriptWithScriptDefinition() {
+        val aClass = compileScript("fib.fib.kt", TestScriptDefinition(".fib.kt", numIntParam()))
+        Assert.assertNotNull(aClass)
+        aClass!!.getConstructor(Integer.TYPE).newInstance(4)
     }
 
-    @Nullable
-    private static Class<?> compileScript(
-            @NotNull String scriptPath,
-            @NotNull KotlinScriptDefinition scriptDefinition
-    ) {
-        KotlinPaths paths = PathUtil.getKotlinPathsForDistDirectory();
-        MessageCollector messageCollector = PrintingMessageCollector.PLAIN_TEXT_TO_SYSTEM_ERR;
+    private fun compileScript(
+            scriptPath: String,
+            scriptDefinition: KotlinScriptDefinition): Class<*>? {
+        val paths = PathUtil.getKotlinPathsForDistDirectory()
+        val messageCollector = PrintingMessageCollector.PLAIN_TEXT_TO_SYSTEM_ERR
 
-        Disposable rootDisposable = Disposer.newDisposable();
+        val rootDisposable = Disposer.newDisposable()
         try {
-            CompilerConfiguration configuration =
-                    KotlinTestUtils.compilerConfigurationForTests(ConfigurationKind.JDK_ONLY, TestJdkKind.FULL_JDK);
-            configuration.put(CLIConfigurationKeys.MESSAGE_COLLECTOR_KEY, messageCollector);
-            ContentRootsKt.addKotlinSourceRoot(configuration, "compiler/testData/script/" + scriptPath);
-            configuration.add(CommonConfigurationKeys.SCRIPT_DEFINITIONS_KEY, scriptDefinition);
+            val configuration = KotlinTestUtils.compilerConfigurationForTests(ConfigurationKind.JDK_ONLY, TestJdkKind.FULL_JDK)
+            configuration.put(CLIConfigurationKeys.MESSAGE_COLLECTOR_KEY, messageCollector)
+            configuration.addKotlinSourceRoot("compiler/testData/script/" + scriptPath)
+            configuration.add(CommonConfigurationKeys.SCRIPT_DEFINITIONS_KEY, scriptDefinition)
 
-            KotlinCoreEnvironment environment =
-                    KotlinCoreEnvironment.createForProduction(rootDisposable, configuration, EnvironmentConfigFiles.JVM_CONFIG_FILES);
+            val environment = KotlinCoreEnvironment.createForProduction(rootDisposable, configuration, EnvironmentConfigFiles.JVM_CONFIG_FILES)
 
             try {
-                return KotlinToJVMBytecodeCompiler.INSTANCE.compileScript(configuration, paths, environment);
+                return KotlinToJVMBytecodeCompiler.compileScript(configuration, paths, environment)
             }
-            catch (CompilationException e) {
+            catch (e: CompilationException) {
                 messageCollector.report(CompilerMessageSeverity.EXCEPTION, OutputMessageUtil.renderException(e),
-                                        MessageUtil.psiElementToMessageLocation(e.getElement()));
-                return null;
+                                        MessageUtil.psiElementToMessageLocation(e.element))
+                return null
             }
-            catch (Throwable t) {
-                MessageCollectorUtil.reportException(messageCollector, t);
-                return null;
+            catch (t: Throwable) {
+                MessageCollectorUtil.reportException(messageCollector, t)
+                return null
             }
+
         }
         finally {
-            Disposer.dispose(rootDisposable);
+            Disposer.dispose(rootDisposable)
         }
     }
 
-    @NotNull
-    private static List<ScriptParameter> numIntParam() {
-        return Collections.singletonList(new ScriptParameter(Name.identifier("num"), JvmPlatform.INSTANCE.getBuiltIns().getIntType()));
+    private fun numIntParam(): List<ScriptParameter> {
+        return listOf(ScriptParameter(Name.identifier("num"), JvmPlatform.builtIns.intType))
     }
 }
