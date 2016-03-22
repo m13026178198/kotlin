@@ -93,7 +93,7 @@ public class ScriptCodegen extends MemberCodegen<KtScript> {
                       classType.getInternalName(),
                       null,
                       typeMapper.mapSupertype(DescriptorUtilsKt.getSuperClassOrAny(scriptDescriptor).getDefaultType(), null).getInternalName(),
-                      ArrayUtil.EMPTY_STRING_ARRAY);
+                      CodegenUtilKt.mapSupertypesNames(typeMapper, DescriptorUtilsKt.getSuperInterfaces(scriptDescriptor), null));
     }
 
     @Override

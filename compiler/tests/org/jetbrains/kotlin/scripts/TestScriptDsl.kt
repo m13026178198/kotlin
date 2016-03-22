@@ -18,7 +18,11 @@
 
 package org.jetbrains.kotlin.scripts
 
-open class TestDSL
+open class TestDSLClass
 
-fun TestDSL.fibCombine(f: (Int) -> Int, n: Int) = if (n < 2) 1 else f(n - 1) + f(n - 2)
+fun TestDSLClass.fibCombine(f: (Int) -> Int, n: Int) = if (n < 2) 1 else f(n - 1) + f(n - 2)
+
+interface TestDSLInterface
+
+fun TestDSLInterface.fibCombine(f: (Int) -> Int, n: Int) = if (n < 2) 1 else f(n - 1) + f(n - 2)
 

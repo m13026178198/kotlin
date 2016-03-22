@@ -19,7 +19,10 @@ package org.jetbrains.kotlin.codegen
 
 import org.jetbrains.kotlin.codegen.context.FieldOwnerContext
 import org.jetbrains.kotlin.codegen.intrinsics.TypeIntrinsics
+import org.jetbrains.kotlin.codegen.signature.JvmSignatureWriter
 import org.jetbrains.kotlin.codegen.state.GenerationState
+import org.jetbrains.kotlin.codegen.state.KotlinTypeMapper
+import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyDescriptor
 import org.jetbrains.kotlin.load.java.BuiltinMethodsWithSpecialGenericSignature.SpecialSignatureInfo
 import org.jetbrains.kotlin.load.java.JvmAbi
@@ -126,3 +129,7 @@ fun populateCompanionBackingFieldNamesToOuterContextIfNeeded(companion: KtObject
     }
 
 }
+
+// TODO: inline and remove then ScriptCodegen is converted to Kotlin
+fun mapSupertypesNames(typeMapper: KotlinTypeMapper, supertypes: List<ClassDescriptor>, signatureVisitor: JvmSignatureWriter?): Array<String> =
+        supertypes.map { typeMapper.mapSupertype(it.defaultType, signatureVisitor).internalName }.toTypedArray()
