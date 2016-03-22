@@ -27,6 +27,7 @@ import org.jetbrains.kotlin.descriptors.ScriptDescriptor;
 import org.jetbrains.kotlin.descriptors.ValueParameterDescriptor;
 import org.jetbrains.kotlin.psi.*;
 import org.jetbrains.kotlin.resolve.BindingContext;
+import org.jetbrains.kotlin.resolve.descriptorUtil.DescriptorUtilsKt;
 import org.jetbrains.kotlin.resolve.jvm.diagnostics.JvmDeclarationOrigin;
 import org.jetbrains.kotlin.resolve.jvm.diagnostics.JvmDeclarationOriginKt;
 import org.jetbrains.kotlin.resolve.jvm.jvmSignature.JvmMethodSignature;
@@ -91,7 +92,7 @@ public class ScriptCodegen extends MemberCodegen<KtScript> {
                       ACC_PUBLIC | ACC_SUPER,
                       classType.getInternalName(),
                       null,
-                      "java/lang/Object",
+                      typeMapper.mapSupertype(DescriptorUtilsKt.getSuperClassOrAny(scriptDescriptor).getDefaultType(), null).getInternalName(),
                       ArrayUtil.EMPTY_STRING_ARRAY);
     }
 
@@ -140,7 +141,9 @@ public class ScriptCodegen extends MemberCodegen<KtScript> {
             Type classType = typeMapper.mapType(scriptDescriptor);
 
             iv.load(0, classType);
-            iv.invokespecial("java/lang/Object", "<init>", "()V", false);
+            iv.invokespecial(
+                    typeMapper.mapSupertype(DescriptorUtilsKt.getSuperClassOrAny(scriptDescriptor).getDefaultType(), null).getInternalName(),
+                    "<init>", "()V", false);
 
             iv.load(0, classType);
 

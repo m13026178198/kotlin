@@ -66,10 +66,9 @@ class ScriptTest {
 
     @Test
     fun testScriptWithClassParameter() {
-        val cl = TestParamClass::class
-        val aClass = compileScript("fib_cp.kts", ReflectedParamClassTestScriptDefinition(".kts", "param", cl), runIsolated = false)
+        val aClass = compileScript("fib_cp.kts", ReflectedParamClassTestScriptDefinition(".kts", "param", TestParamClass::class), runIsolated = false)
         Assert.assertNotNull(aClass)
-        aClass!!.getConstructor(cl.java).newInstance(TestParamClass(4))
+        aClass!!.getConstructor(TestParamClass::class.java).newInstance(TestParamClass(4))
     }
 
     @Test

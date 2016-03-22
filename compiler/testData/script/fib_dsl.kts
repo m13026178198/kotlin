@@ -1,3 +1,6 @@
+
+import org.jetbrains.kotlin.scripts.*
+
 // this script expected parameter num : Int
 
 fun fib(n: Int): Int {
