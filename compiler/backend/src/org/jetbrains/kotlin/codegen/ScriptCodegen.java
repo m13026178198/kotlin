@@ -23,6 +23,8 @@ import org.jetbrains.kotlin.codegen.context.CodegenContext;
 import org.jetbrains.kotlin.codegen.context.MethodContext;
 import org.jetbrains.kotlin.codegen.context.ScriptContext;
 import org.jetbrains.kotlin.codegen.state.GenerationState;
+import org.jetbrains.kotlin.descriptors.ClassDescriptor;
+import org.jetbrains.kotlin.descriptors.ConstructorDescriptor;
 import org.jetbrains.kotlin.descriptors.ScriptDescriptor;
 import org.jetbrains.kotlin.descriptors.ValueParameterDescriptor;
 import org.jetbrains.kotlin.psi.*;
@@ -141,8 +143,17 @@ public class ScriptCodegen extends MemberCodegen<KtScript> {
             Type classType = typeMapper.mapType(scriptDescriptor);
 
             iv.load(0, classType);
+            ClassDescriptor superclass = DescriptorUtilsKt.getSuperClassOrAny(scriptDescriptor);
+            boolean hasDefaultConstructor = false;
+            for (ConstructorDescriptor ctor : superclass.getConstructors()) {
+                if (ctor.getValueParameters().isEmpty()) {
+                    hasDefaultConstructor = true;
+                    break;
+                }
+            }
+            assert hasDefaultConstructor;
             iv.invokespecial(
-                    typeMapper.mapSupertype(DescriptorUtilsKt.getSuperClassOrAny(scriptDescriptor).getDefaultType(), null).getInternalName(),
+                    typeMapper.mapSupertype(superclass.getDefaultType(), null).getInternalName(),
                     "<init>", "()V", false);
 
             iv.load(0, classType);
