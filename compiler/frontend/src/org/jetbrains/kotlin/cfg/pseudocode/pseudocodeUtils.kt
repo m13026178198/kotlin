@@ -300,7 +300,7 @@ fun KtDeclaration.getContainingPseudocode(context: BindingContext): Pseudocode? 
     return enclosingPseudocode.getPseudocodeByElement(this)
 }
 
-fun KtElement.getContainingPseudocode(context: BindingContext) = containingDeclarationForPseudocode?.getContainingPseudocode(context)
+fun KtElement.getContainingPseudocode(context: BindingContext): Pseudocode? = containingDeclarationForPseudocode?.getContainingPseudocode(context)
 
 fun Pseudocode.getPseudocodeByElement(element: KtElement): Pseudocode? {
     if (correspondingElement == element) return this

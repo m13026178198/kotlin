@@ -27,7 +27,8 @@ import kotlin.reflect.KClass
 abstract class BaseScriptDefinition (val extension: String) : KotlinScriptDefinition {
     override fun isScript(file: PsiFile): Boolean = file.name.endsWith(extension)
     override fun getScriptName(script: KtScript): Name = ScriptNameUtil.fileNameWithExtensionStripped(script, extension)
-    override fun getScriptSuperclasses(scriptDescriptor: ScriptDescriptor): List<KotlinType> = emptyList()
+    override fun getScriptSupertypes(scriptDescriptor: ScriptDescriptor): List<KotlinType> = emptyList()
+    override fun getSuperclassConstructorParametersToScriptParametersMap(scriptDescriptor: ScriptDescriptor): List<Pair<Name, KotlinType>> = emptyList()
 }
 
 open class SimpleParamsTestScriptDefinition(extension: String, val parameters: List<ScriptParameter>) : BaseScriptDefinition(extension) {
@@ -39,7 +40,14 @@ class ReflectedParamClassTestScriptDefinition(extension: String, val name: Strin
             listOf(makeReflectedClassScriptParameter(scriptDescriptor, Name.identifier(name), parameter))
 }
 
-class ReflectedSuperclassTestScriptDefinition(extension: String, parameters: List<ScriptParameter>, val superclass: KClass<out Any>) : SimpleParamsTestScriptDefinition(extension, parameters) {
-    override fun getScriptSuperclasses(scriptDescriptor: ScriptDescriptor): List<KotlinType> =
+open class ReflectedSuperclassTestScriptDefinition(extension: String, parameters: List<ScriptParameter>, val superclass: KClass<out Any>) : SimpleParamsTestScriptDefinition(extension, parameters) {
+    override fun getScriptSupertypes(scriptDescriptor: ScriptDescriptor): List<KotlinType> =
             listOf(getKotlinType(scriptDescriptor, superclass))
+}
+
+class ReflectedSuperclassWithParamsTestScriptDefinition(extension: String, parameters: List<ScriptParameter>, superclass: KClass<out Any>, val superclassParameters: List<ScriptParameter>)
+    : ReflectedSuperclassTestScriptDefinition(extension, parameters, superclass)
+{
+    override fun getSuperclassConstructorParametersToScriptParametersMap(scriptDescriptor: ScriptDescriptor): List<Pair<Name, KotlinType>> =
+            superclassParameters.map { Pair(it.name, it.type) }
 }

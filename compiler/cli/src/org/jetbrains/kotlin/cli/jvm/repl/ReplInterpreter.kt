@@ -353,14 +353,15 @@ class ReplInterpreter(
     companion object {
         private val SCRIPT_RESULT_FIELD_NAME = "\$\$result"
         private val REPL_LINE_AS_SCRIPT_DEFINITION = object : KotlinScriptDefinition {
-
             override fun getScriptParameters(scriptDescriptor: ScriptDescriptor): List<ScriptParameter> = emptyList()
 
             override fun isScript(file: PsiFile): Boolean = StandardScriptDefinition.isScript(file)
 
             override fun getScriptName(script: KtScript): Name = StandardScriptDefinition.getScriptName(script)
 
-            override fun getScriptSuperclasses(scriptDescriptor: ScriptDescriptor): List<KotlinType> = emptyList()
+            override fun getScriptSupertypes(scriptDescriptor: ScriptDescriptor): List<KotlinType> = emptyList()
+
+            override fun getSuperclassConstructorParametersToScriptParametersMap(scriptDescriptor: ScriptDescriptor): List<Pair<Name, KotlinType>> = emptyList()
         }
 
         private fun prepareForTheNextReplLine(c: TopDownAnalysisContext) {
