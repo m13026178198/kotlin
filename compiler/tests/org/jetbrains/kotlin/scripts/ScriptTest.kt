@@ -38,6 +38,8 @@ import org.jetbrains.kotlin.utils.PathUtil
 import org.junit.Assert
 import org.junit.Test
 import java.io.File
+import java.net.URLClassLoader
+import java.util.*
 
 class ScriptTest {
     @Test
@@ -118,11 +120,11 @@ class ScriptTest {
             catch (e: CompilationException) {
                 messageCollector.report(CompilerMessageSeverity.EXCEPTION, OutputMessageUtil.renderException(e),
                                         MessageUtil.psiElementToMessageLocation(e.element))
-                return null
+                throw e
             }
             catch (t: Throwable) {
                 MessageCollectorUtil.reportException(messageCollector, t)
-                return null
+                throw t
             }
 
         }
@@ -132,10 +134,16 @@ class ScriptTest {
     }
 
     private fun CompilerConfiguration.addCurrentClasspathAsRoots() {
-        System.getProperty("java.class.path")?.let {
+
+        val cp: MutableSet<File> = System.getProperty("java.class.path")?.let {
             it.split(String.format("\\%s", File.pathSeparatorChar).toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
-                    .forEach { addJvmClasspathRoot(File(it)) }
-        }
+                    .map { File(it).canonicalFile }.toMutableSet()
+        } ?: LinkedHashSet<File>()
+        (this.javaClass.classLoader as? URLClassLoader)?.urLs
+                ?.map { File(it.toURI()).canonicalFile }
+                ?.filter { it.exists() }
+                ?.forEach { cp.add(it) }
+        cp.forEach { addJvmClasspathRoot(it) }
     }
 
     private fun numIntParam(name: String = "num"): List<ScriptParameter> {
