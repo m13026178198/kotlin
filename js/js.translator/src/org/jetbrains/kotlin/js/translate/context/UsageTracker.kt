@@ -38,6 +38,9 @@ class UsageTracker(
     val capturedDescriptorToJsName: Map<DeclarationDescriptor, JsName>
         get() = captured
 
+    val capturedDescriptors: Set<DeclarationDescriptor>
+        get() = captured.keys
+
     fun used(descriptor: DeclarationDescriptor) {
         if (isCaptured(descriptor)) return
 
@@ -61,11 +64,27 @@ class UsageTracker(
 
     private fun captureIfNeed(descriptor: DeclarationDescriptor?) {
         if (descriptor == null || isCaptured(descriptor) || isAncestor(containingDescriptor, descriptor, /* strict = */ true) ||
-            isSingletonReceiver(descriptor)) return
+            isReceiverAncestor(descriptor) || isSingletonReceiver(descriptor)) return
 
         parent?.captureIfNeed(descriptor)
 
         captured[descriptor] = descriptor.getJsNameForCapturedDescriptor()
+    }
+
+    private fun isReceiverAncestor(descriptor: DeclarationDescriptor): Boolean {
+        if (descriptor !is ReceiverParameterDescriptor) return false
+        if (containingDescriptor !is ClassDescriptor && DescriptorUtils.isDescriptorWithLocalVisibility(containingDescriptor)) return false
+
+        val currentClass = DescriptorUtils.getClassDescriptorForType(descriptor.type)
+        val containingClass = generateSequence(containingDescriptor as DeclarationDescriptor) { it.containingDeclaration }
+                    .mapNotNull { it as? ClassDescriptor }
+                    .firstOrNull() ?: return false
+
+        for (outerDeclaration in generateSequence(containingClass) { it.containingDeclaration as? ClassDescriptor }) {
+            if (DescriptorUtils.isSubclass(outerDeclaration, currentClass)) return true
+        }
+
+        return false
     }
 
     private fun isSingletonReceiver(descriptor: DeclarationDescriptor): Boolean {
@@ -99,7 +118,7 @@ class UsageTracker(
     }
 }
 
-fun UsageTracker.getNameForCapturedDescriptor(descriptor: DeclarationDescriptor): JsName? = capturedDescriptorToJsName.get(descriptor)
+fun UsageTracker.getNameForCapturedDescriptor(descriptor: DeclarationDescriptor): JsName? = capturedDescriptorToJsName[descriptor]
 
 fun UsageTracker.hasCapturedExceptContaining(): Boolean {
     val hasNotCaptured =
