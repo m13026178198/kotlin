@@ -12844,6 +12844,12 @@ public class BlackBoxCodegenTestGenerated extends AbstractBlackBoxCodegenTest {
             doTest(fileName);
         }
 
+        @TestMetadata("defaultParametersNotDuplicated.kt")
+        public void testDefaultParametersNotDuplicated() throws Exception {
+            String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/codegen/box/secondaryConstructors/defaultParametersNotDuplicated.kt");
+            doTest(fileName);
+        }
+
         @TestMetadata("delegationWithPrimary.kt")
         public void testDelegationWithPrimary() throws Exception {
             String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/codegen/box/secondaryConstructors/delegationWithPrimary.kt");
