@@ -241,6 +241,9 @@ public class MethodInliner {
                     InlinedLambdaRemapper newCapturedRemapper =
                             new InlinedLambdaRemapper(info.getLambdaClassType().getInternalName(), nodeRemapper, lambdaParameters);
 
+                    if (inlineOnlySmapSkipper != null) {
+                        inlineOnlySmapSkipper.addFakeLineNumberWithNop(remappingMethodAdapter);
+                    }
                     setLambdaInlining(true);
                     SMAP lambdaSMAP = info.getNode().getClassSMAP();
                     SourceMapper mapper =

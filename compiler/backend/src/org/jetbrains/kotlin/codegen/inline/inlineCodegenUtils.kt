@@ -29,6 +29,7 @@ import org.jetbrains.kotlin.serialization.deserialization.descriptors.Deserializ
 import org.jetbrains.kotlin.serialization.deserialization.descriptors.DeserializedSimpleFunctionDescriptor
 import org.jetbrains.org.objectweb.asm.Label
 import org.jetbrains.org.objectweb.asm.MethodVisitor
+import org.jetbrains.org.objectweb.asm.Opcodes
 
 val FunctionDescriptor.sourceFilePath: String
     get() {
@@ -71,10 +72,19 @@ class InlineOnlySmapSkipper(codegen: ExpressionCodegen) {
     val callLineNumber = codegen.lastLineNumber
 
     fun markCallSiteLineNumber(mv: MethodVisitor) {
-        if (callLineNumber >= 0) {
-            val label = Label()
-            mv.visitLabel(label)
-            mv.visitLineNumber(callLineNumber, label)
+        if (callLineNumber > 0) {
+            markLineNumber(callLineNumber, mv)
         }
+    }
+
+    fun addFakeLineNumberWithNop(mv: MethodVisitor) {
+        markLineNumber(SMAP.DEBUG_SPLIT_LINENUMBER, mv)
+        mv.visitInsn(Opcodes.NOP);
+    }
+
+    private fun markLineNumber(line: Int, mv: MethodVisitor) {
+        val label = Label()
+        mv.visitLabel(label)
+        mv.visitLineNumber(line, label)
     }
 }

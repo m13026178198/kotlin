@@ -187,6 +187,12 @@ public class KotlinEvaluateExpressionTestGenerated extends AbstractKotlinEvaluat
             doSingleBreakpointTest(fileName);
         }
 
+        @TestMetadata("inlineOnlyLambda.kt")
+        public void testInlineOnlyLambda() throws Exception {
+            String fileName = KotlinTestUtils.navigationMetadata("idea/testData/debugger/tinyApp/src/evaluate/singleBreakpoint/inlineOnlyLambda.kt");
+            doSingleBreakpointTest(fileName);
+        }
+
         @TestMetadata("innerClass.kt")
         public void testInnerClass() throws Exception {
             String fileName = KotlinTestUtils.navigationMetadata("idea/testData/debugger/tinyApp/src/evaluate/singleBreakpoint/innerClass.kt");
