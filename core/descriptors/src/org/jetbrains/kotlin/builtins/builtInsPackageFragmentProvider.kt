@@ -30,7 +30,7 @@ fun createBuiltInPackageFragmentProvider(
         module: ModuleDescriptor,
         packageFqNames: Set<FqName>,
         classDescriptorFactory: ClassDescriptorFactory,
-        additionalSupertypes: AdditionalSupertypes = AdditionalSupertypes.None,
+        additionalClassPartsProvider: AdditionalClassPartsProvider = AdditionalClassPartsProvider.None,
         loadResource: (String) -> InputStream?
 ): PackageFragmentProvider {
     val packageFragments = packageFqNames.map { fqName ->
@@ -53,7 +53,7 @@ fun createBuiltInPackageFragmentProvider(
             FlexibleTypeCapabilitiesDeserializer.ThrowException,
             classDescriptorFactory,
             notFoundClasses,
-            additionalSupertypes = additionalSupertypes
+            additionalClassPartsProvider = additionalClassPartsProvider
     )
 
     localClassResolver.setDeserializationComponents(components)
