@@ -86,4 +86,4 @@ inline fun foo(f: () -> Int): Int {
 
 fun test(i: Int) = i
 
-// STEP_OVER: 41
+// STEP_OVER: 48

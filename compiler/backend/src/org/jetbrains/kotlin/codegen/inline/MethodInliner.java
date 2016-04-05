@@ -244,6 +244,11 @@ public class MethodInliner {
                     if (inlineOnlySmapSkipper != null) {
                         inlineOnlySmapSkipper.addFakeLineNumberWithNop(remappingMethodAdapter);
                     }
+                    else if (info.getFunctionDescriptor().getValueParameters().isEmpty()) {
+                        //linenumber already generated for lambda call,
+                        //next linenumber would be from lambda body so we need to generate nop instruction to keep this linenumber for debug purpose
+                        visitInsn(Opcodes.NOP);
+                    }
                     setLambdaInlining(true);
                     SMAP lambdaSMAP = info.getNode().getClassSMAP();
                     SourceMapper mapper =

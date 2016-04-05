@@ -90,6 +90,7 @@ public class LambdaInfo implements CapturedParamOwner, LabelOwner {
         this.node = node;
     }
 
+    @NotNull
     public FunctionDescriptor getFunctionDescriptor() {
         return functionDescriptor;
     }

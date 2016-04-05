@@ -54,4 +54,4 @@ inline fun <reified T> reified(f: T): Int {
     return 1
 }
 
-// STEP_OVER: 25
+// STEP_OVER: 28
