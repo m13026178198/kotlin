@@ -16,6 +16,7 @@
 
 package org.jetbrains.kotlin.load.java.lazy.descriptors
 
+import org.jetbrains.kotlin.builtins.DefaultBuiltIns
 import org.jetbrains.kotlin.builtins.KotlinBuiltIns
 import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.descriptors.annotations.Annotations
@@ -30,6 +31,7 @@ import org.jetbrains.kotlin.load.java.BuiltinMethodsWithDifferentJvmName.sameAsR
 import org.jetbrains.kotlin.load.java.BuiltinMethodsWithSpecialGenericSignature.sameAsBuiltinMethodWithErasedValueParameters
 import org.jetbrains.kotlin.load.java.BuiltinSpecialProperties.getBuiltinSpecialPropertyGetterName
 import org.jetbrains.kotlin.load.java.components.DescriptorResolverUtils.resolveOverridesForNonStaticMembers
+import org.jetbrains.kotlin.load.java.components.JavaResolverCache
 import org.jetbrains.kotlin.load.java.components.TypeUsage
 import org.jetbrains.kotlin.load.java.descriptors.JavaConstructorDescriptor
 import org.jetbrains.kotlin.load.java.descriptors.JavaMethodDescriptor
@@ -46,14 +48,18 @@ import org.jetbrains.kotlin.load.java.structure.JavaConstructor
 import org.jetbrains.kotlin.load.java.structure.JavaMethod
 import org.jetbrains.kotlin.load.java.typeEnhancement.enhanceSignatures
 import org.jetbrains.kotlin.name.Name
+import org.jetbrains.kotlin.platform.JavaToKotlinClassMap
+import org.jetbrains.kotlin.platform.createMappedTypeParametersSubstitution
 import org.jetbrains.kotlin.resolve.DescriptorFactory
 import org.jetbrains.kotlin.resolve.DescriptorUtils
 import org.jetbrains.kotlin.resolve.OverridingUtil
+import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.resolve.scopes.DescriptorKindFilter
 import org.jetbrains.kotlin.serialization.deserialization.ErrorReporter
 import org.jetbrains.kotlin.storage.NotNullLazyValue
 import org.jetbrains.kotlin.types.KotlinType
 import org.jetbrains.kotlin.types.TypeUtils
+import org.jetbrains.kotlin.types.Variance
 import org.jetbrains.kotlin.types.checker.KotlinTypeChecker
 import org.jetbrains.kotlin.utils.*
 import org.jetbrains.kotlin.utils.addToStdlib.check
@@ -63,7 +69,8 @@ import java.util.*
 class LazyJavaClassMemberScope(
         c: LazyJavaResolverContext,
         override val ownerDescriptor: ClassDescriptor,
-        private val jClass: JavaClass
+        private val jClass: JavaClass,
+        private val isUsedForBuiltInScopeCalculation: Boolean = false
 ) : LazyJavaScope(c) {
 
     override fun computeMemberIndex(): MemberIndex {
@@ -346,10 +353,25 @@ class LazyJavaClassMemberScope(
     }
 
     private fun getFunctionsFromSupertypes(name: Name): Set<SimpleFunctionDescriptor> {
-          return ownerDescriptor.typeConstructor.supertypes.flatMapTo(LinkedHashSet()) {
+          return getSupertypesForMembersResolution().flatMapTo(LinkedHashSet()) {
               it.memberScope.getContributedFunctions(name, NoLookupLocation.WHEN_GET_SUPER_MEMBERS)
           }
       }
+
+    private fun getSupertypesForMembersResolution(): Collection<KotlinType> {
+        val basicSupertypes = ownerDescriptor.typeConstructor.supertypes
+
+        val platformClasses = JavaToKotlinClassMap.INSTANCE.mapPlatformClass(ownerDescriptor.fqNameSafe, DefaultBuiltIns.Instance)
+        if (platformClasses.isEmpty() || !isUsedForBuiltInScopeCalculation) {
+            return basicSupertypes
+        }
+
+        val kotlinMutableClass = platformClasses.last()
+
+        return basicSupertypes +
+               createMappedTypeParametersSubstitution(kotlinMutableClass, ownerDescriptor)
+                       .buildSubstitutor().substitute(kotlinMutableClass.defaultType, Variance.INVARIANT)!!
+    }
 
     override fun computeNonDeclaredProperties(name: Name, result: MutableCollection<PropertyDescriptor>) {
         if (jClass.isAnnotationType) {
@@ -457,7 +479,7 @@ class LazyJavaClassMemberScope(
     }
 
     private fun getPropertiesFromSupertypes(name: Name): Set<PropertyDescriptor> {
-        return ownerDescriptor.typeConstructor.supertypes.flatMap {
+        return getSupertypesForMembersResolution().flatMap {
             it.memberScope.getContributedVariables(name, NoLookupLocation.WHEN_GET_SUPER_MEMBERS).map { p -> p }
         }.toSet()
     }

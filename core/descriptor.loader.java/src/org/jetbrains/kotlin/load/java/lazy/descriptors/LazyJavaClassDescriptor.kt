@@ -51,7 +51,7 @@ class LazyJavaClassDescriptor(
 ) : ClassDescriptorBase(outerC.storageManager, containingDeclaration, fqName.shortName(),
                         outerC.components.sourceElementFactory.source(jClass)), JavaClassDescriptor {
 
-    private val c: LazyJavaResolverContext = outerC.child(this, jClass)
+    internal val c: LazyJavaResolverContext = outerC.child(this, jClass)
 
     init {
         c.components.javaResolverCache.recordClass(jClass, this)

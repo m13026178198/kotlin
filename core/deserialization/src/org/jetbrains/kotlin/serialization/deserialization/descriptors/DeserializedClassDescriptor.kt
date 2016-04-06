@@ -202,9 +202,10 @@ class DeserializedClassDescriptor(
             for (supertype in classDescriptor.getTypeConstructor().supertypes) {
                 fromSupertypes.addAll(supertype.memberScope.getContributedFunctions(name, NoLookupLocation.FOR_ALREADY_TRACKED))
             }
-            generateFakeOverrides(name, fromSupertypes, functions)
 
             functions.addAll(c.components.additionalClassPartsProvider.getFunctions(name, this@DeserializedClassDescriptor))
+
+            generateFakeOverrides(name, fromSupertypes, functions)
         }
 
         override fun computeNonDeclaredProperties(name: Name, descriptors: MutableCollection<PropertyDescriptor>) {
@@ -234,7 +235,7 @@ class DeserializedClassDescriptor(
         override fun getNonDeclaredFunctionNames(location: LookupLocation): Set<Name> {
             return classDescriptor.typeConstructor.supertypes.flatMapTo(LinkedHashSet()) {
                 it.memberScope.getContributedDescriptors().filterIsInstance<SimpleFunctionDescriptor>().map { it.name }
-            }
+            } + c.components.additionalClassPartsProvider.getFunctionsNames(this@DeserializedClassDescriptor)
         }
 
         override fun getNonDeclaredVariableNames(location: LookupLocation): Set<Name> {
