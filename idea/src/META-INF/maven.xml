@@ -18,7 +18,7 @@
   </extensions>
   <extensions defaultExtensionNs="com.intellij">
     <localInspection implementationClass="org.jetbrains.kotlin.idea.maven.inspections.KotlinMavenPluginPhaseInspection"
-                     displayName="Kotlin Maven Plugin inspection"
+                     displayName="Kotlin Maven Plugin misconfigured"
                      groupName="Kotlin"
                      enabledByDefault="true"
                      language="XML"
@@ -26,7 +26,7 @@
                      level="WARNING" />
 
     <localInspection implementationClass="org.jetbrains.kotlin.idea.maven.inspections.KotlinTestJUnitInspection"
-                     displayName="Kotlin Maven: kotlin-test-junit inspection"
+                     displayName="kotlin-test-junit could be used"
                      groupName="Kotlin"
                      enabledByDefault="true"
                      language="XML"
@@ -34,7 +34,7 @@
                      level="WARNING" />
 
     <localInspection implementationClass="org.jetbrains.kotlin.idea.maven.inspections.SameVersionInspection"
-                     displayName="Kotlin Maven: library and plugin inspection"
+                     displayName="Library and maven plugin versions are different"
                      groupName="Kotlin"
                      enabledByDefault="true"
                      language="XML"
@@ -42,7 +42,7 @@
                      level="WARNING" />
 
     <localInspection implementationClass="org.jetbrains.kotlin.idea.maven.inspections.SameVersionIDEPluginInspection"
-                     displayName="Kotlin Maven: Maven and IDE plugins versions inspection"
+                     displayName="Maven and IDE plugins versions are different"
                      groupName="Kotlin"
                      enabledByDefault="true"
                      language="XML"
