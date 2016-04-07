@@ -17,11 +17,11 @@
 package org.jetbrains.kotlin.codegen
 
 import junit.framework.TestCase
+import org.jetbrains.kotlin.test.ConfigurationKind
 import org.jetbrains.org.objectweb.asm.ClassReader
 import org.jetbrains.org.objectweb.asm.ClassVisitor
 import org.jetbrains.org.objectweb.asm.MethodVisitor
 import org.jetbrains.org.objectweb.asm.Opcodes
-import org.jetbrains.kotlin.test.ConfigurationKind
 import java.util.*
 
 class MethodOrderTest: CodegenTestCase() {
