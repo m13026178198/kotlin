@@ -14,9 +14,10 @@
  * limitations under the License.
  */
 
-package org.jetbrains.kotlin.resolve.constants.evaluate;
+package org.jetbrains.kotlin.resolve;
 
 import com.intellij.testFramework.TestDataPath;
+import org.jetbrains.kotlin.resolve.constants.evaluate.AbstractCompileTimeConstantEvaluatorTest;
 import org.jetbrains.kotlin.test.JUnit3RunnerWithInners;
 import org.jetbrains.kotlin.test.KotlinTestUtils;
 import org.jetbrains.kotlin.test.TestMetadata;
