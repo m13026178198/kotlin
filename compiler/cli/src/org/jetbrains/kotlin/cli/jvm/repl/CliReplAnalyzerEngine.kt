@@ -22,27 +22,24 @@ import org.jetbrains.kotlin.cli.jvm.compiler.JvmPackagePartProvider
 import org.jetbrains.kotlin.cli.jvm.compiler.KotlinCoreEnvironment
 import org.jetbrains.kotlin.cli.jvm.config.getModuleName
 import org.jetbrains.kotlin.cli.jvm.repl.di.createContainerForReplWithJava
-import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.descriptors.ScriptDescriptor
 import org.jetbrains.kotlin.descriptors.impl.CompositePackageFragmentProvider
 import org.jetbrains.kotlin.descriptors.impl.ModuleDescriptorImpl
 import org.jetbrains.kotlin.diagnostics.Severity
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.psi.KtFile
-import org.jetbrains.kotlin.psi.KtImportsFactory
 import org.jetbrains.kotlin.resolve.*
 import org.jetbrains.kotlin.resolve.calls.smartcasts.DataFlowInfoFactory
 import org.jetbrains.kotlin.resolve.diagnostics.Diagnostics
 import org.jetbrains.kotlin.resolve.jvm.TopDownAnalyzerFacadeForJVM
-import org.jetbrains.kotlin.resolve.lazy.FileScopeProviderImpl
+import org.jetbrains.kotlin.resolve.lazy.FileScopeFactory
+import org.jetbrains.kotlin.resolve.lazy.FileScopeProvider
 import org.jetbrains.kotlin.resolve.lazy.ResolveSession
-import org.jetbrains.kotlin.resolve.lazy.TopLevelDescriptorProvider
 import org.jetbrains.kotlin.resolve.lazy.data.KtClassLikeInfo
 import org.jetbrains.kotlin.resolve.lazy.declarations.*
 import org.jetbrains.kotlin.resolve.lazy.descriptors.LazyScriptDescriptor
 import org.jetbrains.kotlin.resolve.scopes.LexicalScope
 import org.jetbrains.kotlin.script.ScriptPriorities
-import org.jetbrains.kotlin.storage.StorageManager
 
 class CliReplAnalyzerEngine(private val environment: KotlinCoreEnvironment) {
     private val topDownAnalysisContext: TopDownAnalysisContext
@@ -205,14 +202,10 @@ class ReplState {
 
 class ReplFileScopeProvider(
         private val replState: ReplState,
-        topLevelDescriptorProvider: TopLevelDescriptorProvider,
-        storageManager: StorageManager,
-        moduleDescriptor: ModuleDescriptor,
-        qualifiedExpressionResolver: QualifiedExpressionResolver,
-        bindingTrace: BindingTrace,
-        ktImportsFactory: KtImportsFactory
-) : FileScopeProviderImpl(topLevelDescriptorProvider, storageManager, moduleDescriptor, qualifiedExpressionResolver, bindingTrace, ktImportsFactory) {
+        private val fileScopeFactory: FileScopeFactory
+) : FileScopeProvider {
+    override fun getFileResolutionScope(file: KtFile)
+            = replState.lineInfo(file)?.lexicalScopeBeforeThisLine ?: fileScopeFactory.getLexicalScopeAndImportResolver(file).scope
 
-    override fun getFileResolutionScope(file: KtFile): LexicalScope
-            = replState.lineInfo(file)?.lexicalScopeBeforeThisLine ?: super.getFileResolutionScope(file)
+    override fun getImportResolver(file: KtFile) = fileScopeFactory.getLexicalScopeAndImportResolver(file).importResolver
 }
