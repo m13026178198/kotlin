@@ -16,6 +16,8 @@
 
 package org.jetbrains.kotlin.cli
 
+import com.intellij.execution.configurations.GeneralCommandLine
+import com.intellij.execution.util.ExecUtil
 import com.intellij.openapi.util.SystemInfo
 import org.jetbrains.kotlin.cli.common.ExitCode
 import org.jetbrains.kotlin.test.KotlinTestUtils
