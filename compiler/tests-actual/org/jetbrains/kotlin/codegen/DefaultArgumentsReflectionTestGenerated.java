@@ -14,9 +14,10 @@
  * limitations under the License.
  */
 
-package org.jetbrains.kotlin.codegen.defaultConstructor;
+package org.jetbrains.kotlin.codegen;
 
 import com.intellij.testFramework.TestDataPath;
+import org.jetbrains.kotlin.codegen.defaultConstructor.AbstractDefaultArgumentsReflectionTest;
 import org.jetbrains.kotlin.test.JUnit3RunnerWithInners;
 import org.jetbrains.kotlin.test.KotlinTestUtils;
 import org.jetbrains.kotlin.test.TestMetadata;
