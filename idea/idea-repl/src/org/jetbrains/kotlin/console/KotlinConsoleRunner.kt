@@ -1,5 +1,5 @@
 /*
- * Copyright 2010-2015 JetBrains s.r.o.
+ * Copyright 2010-2016 JetBrains s.r.o.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,11 +39,15 @@ import com.intellij.openapi.editor.markup.HighlighterLayer
 import com.intellij.openapi.editor.markup.HighlighterTargetArea
 import com.intellij.openapi.editor.markup.RangeHighlighter
 import com.intellij.openapi.editor.markup.TextAttributes
+import com.intellij.openapi.fileTypes.LanguageFileType
 import com.intellij.openapi.keymap.KeymapUtil
 import com.intellij.openapi.module.Module
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Disposer
-import com.intellij.psi.PsiManager
+import com.intellij.openapi.vfs.VirtualFile
+import com.intellij.psi.*
+import com.intellij.psi.impl.PsiFileFactoryImpl
+import com.intellij.testFramework.LightVirtualFile
 import org.jetbrains.annotations.TestOnly
 import org.jetbrains.kotlin.console.actions.BuildAndRestartConsoleAction
 import org.jetbrains.kotlin.console.actions.KtExecuteCommandAction
@@ -51,9 +55,17 @@ import org.jetbrains.kotlin.console.gutter.ConsoleGutterContentProvider
 import org.jetbrains.kotlin.console.gutter.ConsoleIndicatorRenderer
 import org.jetbrains.kotlin.console.gutter.IconWithTooltip
 import org.jetbrains.kotlin.console.gutter.ReplIcons
+import org.jetbrains.kotlin.descriptors.ScriptDescriptor
 import org.jetbrains.kotlin.idea.KotlinLanguage
+import org.jetbrains.kotlin.idea.caches.resolve.ModuleTestSourceInfo
 import org.jetbrains.kotlin.idea.completion.doNotComplete
+import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.psi.KtFile
+import org.jetbrains.kotlin.psi.KtScript
+import org.jetbrains.kotlin.psi.moduleInfo
+import org.jetbrains.kotlin.script.KotlinScriptDefinition
+import org.jetbrains.kotlin.script.KotlinScriptDefinitionProvider
+import org.jetbrains.kotlin.script.ScriptParameter
 import java.awt.Color
 import java.awt.Font
 import kotlin.properties.Delegates
@@ -102,9 +114,18 @@ class KotlinConsoleRunner(
     override fun createProcess() = cmdLine.createProcess()
 
     override fun createConsoleView(): LanguageConsoleView? {
-        val consoleView = LanguageConsoleBuilder()
-                .gutterContentProvider(ConsoleGutterContentProvider())
+        val builder = LanguageConsoleBuilder()
+
+        val consoleView = builder.gutterContentProvider(ConsoleGutterContentProvider())
+                .psiFileFactory { virtualFile, project -> createScriptFile(virtualFile, project) }
                 .build(project, KotlinLanguage.INSTANCE)
+
+
+        KotlinScriptDefinitionProvider.getInstance(project).addScriptDefinition(object : KotlinScriptDefinition {
+            override fun isScript(file: PsiFile) = file.originalFile.virtualFile == consoleView.virtualFile
+            override fun getScriptParameters(scriptDescriptor: ScriptDescriptor) = emptyList<ScriptParameter>()
+            override fun getScriptName(script: KtScript) = Name.identifier("REPL")
+        })
 
         consoleView.prompt = null
 
@@ -183,7 +204,7 @@ class KotlinConsoleRunner(
     private fun disableCompletion(consoleView: LanguageConsoleView) {
         val consoleFile = consoleView.virtualFile
         val jetFile = PsiManager.getInstance(project).findFile(consoleFile) as? KtFile ?: return
-        jetFile.doNotComplete = true
+        jetFile.moduleInfo = ModuleTestSourceInfo(module)
     }
 
     fun setupGutters() {
@@ -225,4 +246,15 @@ class KotlinConsoleRunner(
         processHandler.destroyProcess()
         Disposer.dispose(disposableDescriptor)
     }
+}
+
+fun createScriptFile(virtualFile: VirtualFile, project: Project): PsiFile {
+    val singleRootFileViewProvider = SingleRootFileViewProvider(PsiManager.getInstance(project), virtualFile)
+    val scriptFile = KtFile(singleRootFileViewProvider, false)
+    KotlinScriptDefinitionProvider.getInstance(project).addScriptDefinition(object: KotlinScriptDefinition {
+        override fun isScript(file: PsiFile) = scriptFile == file
+        override fun getScriptParameters(scriptDescriptor: ScriptDescriptor) = emptyList<ScriptParameter>()
+        override fun getScriptName(script: KtScript) = Name.identifier("REPL")
+    })
+    return scriptFile
 }
