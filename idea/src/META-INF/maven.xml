@@ -5,7 +5,7 @@
   </extensions>
   <extensions defaultExtensionNs="org.jetbrains.idea.maven">
     <importer implementation="org.jetbrains.kotlin.idea.maven.KotlinMavenImporter" />
-    <archetypesProvider implementation="org.jetbrains.kotlin.idea.configuration.KotlinMavenArchetypesProvider" />
+    <archetypesProvider implementation="org.jetbrains.kotlin.idea.maven.KotlinMavenArchetypesProvider" />
 
     <pluginDescriptor mavenId="org.jetbrains.kotlin:kotlin-maven-plugin">
       <param name="sourceDirs/dir" refProvider="org.jetbrains.idea.maven.plugins.api.common.MavenCommonParamReferenceProviders$DirPath"/>
@@ -17,7 +17,7 @@
     </pluginDescriptor>
   </extensions>
   <extensions defaultExtensionNs="com.intellij">
-    <localInspection implementationClass="org.jetbrains.kotlin.idea.configuration.KotlinMavenPluginPhaseInspection"
+    <localInspection implementationClass="org.jetbrains.kotlin.idea.maven.inspections.KotlinMavenPluginPhaseInspection"
                      displayName="Kotlin Maven Plugin inspection"
                      groupName="Kotlin"
                      enabledByDefault="true"
@@ -25,7 +25,7 @@
                      hasStaticDescription="true"
                      level="WARNING" />
 
-    <localInspection implementationClass="org.jetbrains.kotlin.idea.configuration.KotlinTestJUnitInspection"
+    <localInspection implementationClass="org.jetbrains.kotlin.idea.maven.inspections.KotlinTestJUnitInspection"
                      displayName="Kotlin Maven: kotlin-test-junit inspection"
                      groupName="Kotlin"
                      enabledByDefault="true"
@@ -41,7 +41,7 @@
                      hasStaticDescription="true"
                      level="WARNING" />
 
-    <localInspection implementationClass="org.jetbrains.kotlin.idea.configuration.SameVersionIDEPluginInspection"
+    <localInspection implementationClass="org.jetbrains.kotlin.idea.maven.inspections.SameVersionIDEPluginInspection"
                      displayName="Kotlin Maven: Maven and IDE plugins versions inspection"
                      groupName="Kotlin"
                      enabledByDefault="true"
