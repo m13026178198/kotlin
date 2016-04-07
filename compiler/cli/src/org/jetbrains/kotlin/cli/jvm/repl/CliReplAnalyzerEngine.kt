@@ -32,14 +32,16 @@ import org.jetbrains.kotlin.resolve.*
 import org.jetbrains.kotlin.resolve.calls.smartcasts.DataFlowInfoFactory
 import org.jetbrains.kotlin.resolve.diagnostics.Diagnostics
 import org.jetbrains.kotlin.resolve.jvm.TopDownAnalyzerFacadeForJVM
-import org.jetbrains.kotlin.resolve.lazy.FileScopeFactory
-import org.jetbrains.kotlin.resolve.lazy.FileScopeProvider
-import org.jetbrains.kotlin.resolve.lazy.ResolveSession
+import org.jetbrains.kotlin.resolve.lazy.*
 import org.jetbrains.kotlin.resolve.lazy.data.KtClassLikeInfo
 import org.jetbrains.kotlin.resolve.lazy.declarations.*
 import org.jetbrains.kotlin.resolve.lazy.descriptors.LazyScriptDescriptor
+import org.jetbrains.kotlin.resolve.scopes.ImportingScope
 import org.jetbrains.kotlin.resolve.scopes.LexicalScope
+import org.jetbrains.kotlin.resolve.scopes.utils.parentsWithSelf
+import org.jetbrains.kotlin.resolve.scopes.utils.replaceImportingScopes
 import org.jetbrains.kotlin.script.ScriptPriorities
+import org.jetbrains.kotlin.utils.addToStdlib.firstIsInstance
 
 class CliReplAnalyzerEngine(private val environment: KotlinCoreEnvironment) {
     private val topDownAnalysisContext: TopDownAnalysisContext
@@ -47,8 +49,8 @@ class CliReplAnalyzerEngine(private val environment: KotlinCoreEnvironment) {
     private val resolveSession: ResolveSession
     private val scriptDeclarationFactory: ScriptMutableDeclarationProviderFactory
     val module: ModuleDescriptorImpl
+    val replState: ReplState
     val trace: BindingTraceContext = CliLightClassGenerationSupport.NoScopeRecordCliBindingTrace()
-    private val replState = ReplState()
 
     init {
         val moduleContext = TopDownAnalyzerFacadeForJVM.createContextWithSealedModule(environment.project, environment.getModuleName())
@@ -61,7 +63,6 @@ class CliReplAnalyzerEngine(private val environment: KotlinCoreEnvironment) {
                 trace,
                 scriptDeclarationFactory,
                 ProjectScope.getAllScope(environment.project),
-                replState,
                 JvmPackagePartProvider(environment)
         )
 
@@ -70,6 +71,7 @@ class CliReplAnalyzerEngine(private val environment: KotlinCoreEnvironment) {
         )
         this.topDownAnalyzer = container.lazyTopDownAnalyzerForTopLevel
         this.resolveSession = container.resolveSession
+        this.replState = container.replState
 
         moduleContext.initializeModuleContents(CompositePackageFragmentProvider(
                 listOf(
@@ -168,7 +170,9 @@ class CliReplAnalyzerEngine(private val environment: KotlinCoreEnvironment) {
     }
 }
 
-class ReplState {
+class ReplState(
+        private val fileScopeFactory: FileScopeFactory
+) {
     private val lines = hashMapOf<KtFile, LineInfo>()
     private val successfulLines = arrayListOf<SuccessfulLine>()
 
@@ -188,24 +192,35 @@ class ReplState {
 
     fun lineInfo(ktFile: KtFile) = lines[ktFile]
 
-    interface LineInfo {
-        val linePsi: KtFile
-        val parentLine: SuccessfulLine?
+    inner abstract class LineInfo {
+        abstract val linePsi: KtFile
+        abstract val parentLine: SuccessfulLine?
 
-        val lexicalScopeBeforeThisLine: LexicalScope? get() = parentLine?.lineDescriptor?.scopeForInitializerResolution
+        val fileScopesForThisLine: FileScopes by lazy { computeFileScopes() }
+
+        fun computeFileScopes(): FileScopes {
+            // create scope that wraps previous line lexical scope and adds imports from this line
+            val lexicalScopeAfterLastLine = parentLine?.lineDescriptor?.scopeForInitializerResolution
+                                     ?: return fileScopeFactory.createScopesForFile(linePsi)
+            val lastLineImports = lexicalScopeAfterLastLine.parentsWithSelf.firstIsInstance<ImportingScope>()
+            val scopesForThisLine = fileScopeFactory.createScopesForFile(linePsi, lastLineImports)
+            val combinedLexicalScopes = lexicalScopeAfterLastLine.replaceImportingScopes(scopesForThisLine.importingScope)
+            return FileScopes(combinedLexicalScopes, scopesForThisLine.importingScope, scopesForThisLine.importResolver)
+        }
     }
 
-    data class SubmittedLine(override val linePsi: KtFile, override val parentLine: SuccessfulLine?): LineInfo
-    data class SuccessfulLine(override val linePsi: KtFile, override val parentLine: SuccessfulLine?, val lineDescriptor: LazyScriptDescriptor): LineInfo
-    data class FailedLine(override val linePsi: KtFile, override val parentLine: SuccessfulLine?): LineInfo
+    inner class SubmittedLine(override val linePsi: KtFile, override val parentLine: SuccessfulLine?) : LineInfo()
+    inner class SuccessfulLine(override val linePsi: KtFile, override val parentLine: SuccessfulLine?, val lineDescriptor: LazyScriptDescriptor) : LineInfo()
+    inner class FailedLine(override val linePsi: KtFile, override val parentLine: SuccessfulLine?) : LineInfo()
 }
 
 class ReplFileScopeProvider(
         private val replState: ReplState,
         private val fileScopeFactory: FileScopeFactory
 ) : FileScopeProvider {
-    override fun getFileResolutionScope(file: KtFile)
-            = replState.lineInfo(file)?.lexicalScopeBeforeThisLine ?: fileScopeFactory.getLexicalScopeAndImportResolver(file).scope
+    override fun getFileResolutionScope(file: KtFile): LexicalScope
+            = (replState.lineInfo(file)?.fileScopesForThisLine ?: fileScopeFactory.createScopesForFile(file)).lexicalScope
 
-    override fun getImportResolver(file: KtFile) = fileScopeFactory.getLexicalScopeAndImportResolver(file).importResolver
+    override fun getImportResolver(file: KtFile): ImportResolver =
+            (replState.lineInfo(file)?.fileScopesForThisLine ?: fileScopeFactory.createScopesForFile(file)).importResolver
 }

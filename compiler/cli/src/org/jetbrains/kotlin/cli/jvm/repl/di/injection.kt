@@ -41,14 +41,12 @@ fun createContainerForReplWithJava(
         bindingTrace: BindingTrace,
         declarationProviderFactory: DeclarationProviderFactory,
         moduleContentScope: GlobalSearchScope,
-        replState: ReplState,
         packagePartProvider: PackagePartProvider
 ): ContainerForReplWithJava = createContainer("ReplWithJava") {
     useInstance(packagePartProvider)
     configureModule(moduleContext, JvmPlatform, bindingTrace)
     configureJavaTopDownAnalysis(moduleContentScope, moduleContext.project, LookupTracker.DO_NOTHING)
 
-    useInstance(replState)
     useImpl<ReplFileScopeProvider>()
     useInstance(declarationProviderFactory)
 
@@ -65,4 +63,5 @@ class ContainerForReplWithJava(container: StorageComponentContainer) {
     val resolveSession: ResolveSession by container
     val lazyTopDownAnalyzerForTopLevel: LazyTopDownAnalyzerForTopLevel by container
     val javaDescriptorResolver: JavaDescriptorResolver by container
+    val replState: ReplState by container
 }

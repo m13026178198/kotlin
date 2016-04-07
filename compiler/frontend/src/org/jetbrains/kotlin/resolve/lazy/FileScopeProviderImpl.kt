@@ -21,10 +21,10 @@ import org.jetbrains.kotlin.resolve.scopes.LexicalScope
 
 class FileScopeProviderImpl(private val fileScopeFactory: FileScopeFactory) : FileScopeProvider {
     override fun getFileResolutionScope(file: KtFile): LexicalScope {
-        return fileScopeFactory.getLexicalScopeAndImportResolver(file).scope
+        return fileScopeFactory.createScopesForFile(file).lexicalScope
     }
 
     override fun getImportResolver(file: KtFile): ImportResolver {
-        return fileScopeFactory.getLexicalScopeAndImportResolver(file).importResolver
+        return fileScopeFactory.createScopesForFile(file).importResolver
     }
 }

@@ -39,6 +39,8 @@ import org.jetbrains.kotlin.types.TypeSubstitutor
 import org.jetbrains.kotlin.utils.Printer
 import org.jetbrains.kotlin.utils.addToStdlib.check
 
+data class FileScopes(val lexicalScope: LexicalScope, val importingScope: ImportingScope, val importResolver: ImportResolver)
+
 class FileScopeFactory(
         private val topLevelDescriptorProvider: TopLevelDescriptorProvider,
         private val storageManager: StorageManager,
@@ -47,18 +49,19 @@ class FileScopeFactory(
         private val bindingTrace: BindingTrace,
         private val ktImportsFactory: KtImportsFactory
 ) {
-
-    class FileData(val scope: LexicalScope, val importResolver: ImportResolver)
-
-    fun getLexicalScopeAndImportResolver(file: KtFile): FileData = cache(file)
+    fun createScopesForFile(file: KtFile, existingImports: ImportingScope? = null) = cache(Request(file, existingImports))
 
     private val defaultImports by storageManager.createLazyValue {
         ktImportsFactory.createImportDirectives(moduleDescriptor.defaultImports)
     }
 
-    private val cache = storageManager.createMemoizedFunction { file: KtFile -> createScopeChainAndImportResolver(file) }
+    private data class Request(val file: KtFile, val existingImports: ImportingScope?)
 
-    private fun createScopeChainAndImportResolver(file: KtFile): FileData {
+    private val cache = storageManager.createMemoizedFunction {
+        request: Request -> createScopeChainAndImportResolver(request.file, request.existingImports)
+    }
+
+    private fun createScopeChainAndImportResolver(file: KtFile, existingImports: ImportingScope?): FileScopes {
         val debugName = "LazyFileScope for file " + file.name
         val tempTrace = TemporaryBindingTrace.create(bindingTrace, "Transient trace for default imports lazy resolve")
 
@@ -89,7 +92,7 @@ class FileScopeFactory(
 
         var scope: ImportingScope
 
-        scope = LazyImportScope(null, defaultAllUnderImportResolver, LazyImportScope.FilteringKind.INVISIBLE_CLASSES,
+        scope = LazyImportScope(existingImports, defaultAllUnderImportResolver, LazyImportScope.FilteringKind.INVISIBLE_CLASSES,
                                 "Default all under imports in $debugName (invisible classes only)")
 
         scope = LazyImportScope(scope, allUnderImportResolver, LazyImportScope.FilteringKind.INVISIBLE_CLASSES,
@@ -110,9 +113,9 @@ class FileScopeFactory(
 
         scope = currentPackageScope(packageView, aliasImportNames, dummyContainerDescriptor, FilteringKind.VISIBLE_CLASSES, scope)
 
-        scope = LazyImportScope(scope, explicitImportResolver, LazyImportScope.FilteringKind.ALL, "Explicit imports in $debugName")
+        val importingScope = LazyImportScope(scope, explicitImportResolver, LazyImportScope.FilteringKind.ALL, "Explicit imports in $debugName")
 
-        val lexicalScope = LexicalScope.empty(scope, packageFragment)
+        val lexicalScope = LexicalScope.empty(importingScope, packageFragment)
 
         bindingTrace.recordScope(lexicalScope, file)
 
@@ -132,7 +135,7 @@ class FileScopeFactory(
             }
         }
 
-        return FileData(lexicalScope, importResolver)
+        return FileScopes(lexicalScope, importingScope, importResolver)
     }
 
     private enum class FilteringKind {
