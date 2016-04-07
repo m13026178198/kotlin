@@ -20,7 +20,5 @@
     <orderEntry type="module" module-name="descriptors.runtime" />
     <orderEntry type="module" module-name="preloader" />
     <orderEntry type="module" module-name="util" />
-    <orderEntry type="module" module-name="compiler-tests" />
-    <orderEntry type="module" module-name="tests-actual" />
   </component>
 </module>
