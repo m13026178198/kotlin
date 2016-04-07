@@ -25,7 +25,6 @@ import org.jetbrains.kotlin.cli.jvm.compiler.KotlinToJVMBytecodeCompiler
 import org.jetbrains.kotlin.cli.jvm.config.addJvmClasspathRoot
 import org.jetbrains.kotlin.codegen.CompilationException
 import org.jetbrains.kotlin.config.CommonConfigurationKeys
-import org.jetbrains.kotlin.config.CompilerConfiguration
 import org.jetbrains.kotlin.config.addKotlinSourceRoot
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.resolve.jvm.platform.JvmPlatform
@@ -38,8 +37,6 @@ import org.jetbrains.kotlin.utils.PathUtil
 import org.junit.Assert
 import org.junit.Test
 import java.io.File
-import java.net.URLClassLoader
-import java.util.*
 
 class ScriptTest {
     @Test
@@ -94,13 +91,28 @@ class ScriptTest {
         aClass!!.getConstructor(Integer.TYPE).newInstance(4)
     }
 
+    @Test
+    fun testScriptWithClasspath() {
+        val aClass1 = compileScript("fib_ext.kts", SimpleParamsWithClasspathTestScriptDefinition(".kts", numIntParam(), classpath = emptyList()), runIsolated = true, suppressOutput = true)
+        Assert.assertNull(aClass1)
+
+        val cp = classpathFromClassloader(ScriptTest::class.java.classLoader).filter { it.contains("kotlin-runtime") || it.contains("junit") }
+        Assert.assertFalse(cp.isEmpty())
+
+        val aClass2 = compileScript("fib_ext.kts", SimpleParamsWithClasspathTestScriptDefinition(".kts", numIntParam(), classpath = cp), runIsolated = true)
+        Assert.assertNotNull(aClass2)
+    }
+
     private fun compileScript(
             scriptPath: String,
             scriptDefinition: KotlinScriptDefinition,
-            runIsolated: Boolean = true): Class<*>?
+            runIsolated: Boolean = true,
+            suppressOutput: Boolean = false): Class<*>?
     {
         val paths = PathUtil.getKotlinPathsForDistDirectory()
-        val messageCollector = PrintingMessageCollector.PLAIN_TEXT_TO_SYSTEM_ERR
+        val messageCollector =
+                if (suppressOutput) MessageCollector.NONE
+                else PrintingMessageCollector.PLAIN_TEXT_TO_SYSTEM_ERR
 
         val rootDisposable = Disposer.newDisposable()
         try {
@@ -108,8 +120,7 @@ class ScriptTest {
             configuration.put(CLIConfigurationKeys.MESSAGE_COLLECTOR_KEY, messageCollector)
             configuration.addKotlinSourceRoot("compiler/testData/script/" + scriptPath)
             configuration.add(CommonConfigurationKeys.SCRIPT_DEFINITIONS_KEY, scriptDefinition)
-            if (!runIsolated)
-                configuration.addCurrentClasspathAsRoots()
+            scriptDefinition.getScriptDependenciesClasspath().forEach { configuration.addJvmClasspathRoot(File(it)) }
 
             val environment = KotlinCoreEnvironment.createForProduction(rootDisposable, configuration, EnvironmentConfigFiles.JVM_CONFIG_FILES)
 
@@ -131,19 +142,6 @@ class ScriptTest {
         finally {
             Disposer.dispose(rootDisposable)
         }
-    }
-
-    private fun CompilerConfiguration.addCurrentClasspathAsRoots() {
-
-        val cp: MutableSet<File> = System.getProperty("java.class.path")?.let {
-            it.split(String.format("\\%s", File.pathSeparatorChar).toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
-                    .map { File(it).canonicalFile }.toMutableSet()
-        } ?: LinkedHashSet<File>()
-        (this.javaClass.classLoader as? URLClassLoader)?.urLs
-                ?.map { File(it.toURI()).canonicalFile }
-                ?.filter { it.exists() }
-                ?.forEach { cp.add(it) }
-        cp.forEach { addJvmClasspathRoot(it) }
     }
 
     private fun numIntParam(name: String = "num"): List<ScriptParameter> {
