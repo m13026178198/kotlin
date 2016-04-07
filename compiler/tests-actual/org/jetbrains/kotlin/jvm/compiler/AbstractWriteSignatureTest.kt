@@ -23,10 +23,8 @@ import com.intellij.openapi.util.io.FileUtil
 import org.jetbrains.kotlin.cli.common.output.outputUtils.writeAllTo
 import org.jetbrains.kotlin.cli.jvm.compiler.KotlinCoreEnvironment
 import org.jetbrains.kotlin.codegen.GenerationUtils
-import org.jetbrains.kotlin.cli.jvm.compiler.JvmPackagePartProvider
 import org.jetbrains.kotlin.test.KotlinTestUtils
 import org.jetbrains.kotlin.test.TestCaseWithTmpdir
-import org.jetbrains.kotlin.utils.join
 import org.jetbrains.org.objectweb.asm.*
 import org.junit.Assert
 import java.io.File
@@ -34,8 +32,6 @@ import java.io.FileInputStream
 import java.nio.charset.Charset
 import java.util.*
 import java.util.regex.MatchResult
-import java.util.regex.Pattern
-import kotlin.text.Regex
 
 
 abstract class AbstractWriteSignatureTest : TestCaseWithTmpdir() {

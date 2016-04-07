@@ -14,9 +14,10 @@
  * limitations under the License.
  */
 
-package org.jetbrains.kotlin.jvm.compiler;
+package org.jetbrains.kotlin.jvm.runtime;
 
 import com.intellij.testFramework.TestDataPath;
+import org.jetbrains.kotlin.jvm.compiler.AbstractLoadJavaTest;
 import org.jetbrains.kotlin.test.JUnit3RunnerWithInners;
 import org.jetbrains.kotlin.test.KotlinTestUtils;
 import org.jetbrains.kotlin.test.TestMetadata;
