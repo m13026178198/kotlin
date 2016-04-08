@@ -78,7 +78,7 @@ class InlineOnlySmapSkipper(codegen: ExpressionCodegen) {
     }
 
     fun addFakeLineNumberWithNop(mv: MethodVisitor) {
-        markLineNumber(SMAP.DEBUG_SPLIT_LINENUMBER, mv)
+        markLineNumber(1, mv)
         mv.visitInsn(Opcodes.NOP);
     }
 

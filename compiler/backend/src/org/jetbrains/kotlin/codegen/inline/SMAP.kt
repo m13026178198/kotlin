@@ -66,11 +66,6 @@ open class NestedSourceMapper(
         parent: SourceMapper, val ranges: List<RangeMapping>, sourceInfo: SourceInfo
 ) : DefaultSourceMapper(sourceInfo, parent) {
     override fun visitLineNumber(iv: MethodVisitor, lineNumber: Int, start: Label) {
-        if (lineNumber == SMAP.DEBUG_SPLIT_LINENUMBER) {
-            parent!!.visitLineNumber(iv, lineNumber, start)
-            return
-        }
-
         val index = ranges.binarySearch(RangeMapping(lineNumber, lineNumber, 1), Comparator {
             value, key ->
             if (key.dest in value) 0 else RangeMapping.Comparator.compare(value, key)
@@ -107,11 +102,6 @@ open class InlineLambdaSourceMapper(
     }
 
     override fun visitLineNumber(iv: MethodVisitor, lineNumber: Int, start: Label) {
-        if (lineNumber == SMAP.DEBUG_SPLIT_LINENUMBER) {
-            parent!!.visitLineNumber(iv, lineNumber, start)
-            return
-        }
-
         val index = ranges.binarySearch(RangeMapping(lineNumber, lineNumber, 1), Comparator {
             value, key ->
             if (key.dest in value) 0 else RangeMapping.Comparator.compare(value, key)
@@ -220,14 +210,10 @@ open class DefaultSourceMapper(val sourceInfo: SourceInfo, override val parent: 
     override fun visitLineNumber(iv: MethodVisitor, lineNumber: Int, start: Label) {
         if (lineNumber < 0) {
             //no source information, so just skip this linenumber
+            return
         }
-        else if (lineNumber == SMAP.DEBUG_SPLIT_LINENUMBER) {
-            iv.visitLineNumber(lineNumber, start)
-        }
-        else {
-            val mappedLineIndex = createMapping(lineNumber)
-            iv.visitLineNumber(mappedLineIndex, start)
-        }
+        val mappedLineIndex = createMapping(lineNumber)
+        iv.visitLineNumber(mappedLineIndex, start)
     }
 
     protected fun createMapping(lineNumber: Int): Int {
@@ -263,7 +249,6 @@ class SMAP(val fileMappings: List<FileMapping>) {
         val FILE_SECTION = "*F"
         val LINE_SECTION = "*L"
         val END = "*E"
-        val DEBUG_SPLIT_LINENUMBER = 65535;
     }
 }
 
