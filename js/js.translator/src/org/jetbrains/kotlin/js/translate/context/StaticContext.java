@@ -1,5 +1,5 @@
 /*
- * Copyright 2010-2016 JetBrains s.r.o.
+ * Copyright 2010-2015 JetBrains s.r.o.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@ import com.google.dart.compiler.backend.js.ast.metadata.HasMetadata;
 import com.google.dart.compiler.backend.js.ast.metadata.MetadataProperties;
 import com.intellij.openapi.util.Factory;
 import com.intellij.util.containers.ContainerUtil;
+import com.intellij.util.containers.hash.LinkedHashMap;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.kotlin.builtins.ReflectionTypes;
@@ -39,6 +40,7 @@ import org.jetbrains.kotlin.resolve.BindingTrace;
 import org.jetbrains.kotlin.resolve.DescriptorUtils;
 
 import java.util.List;
+import java.util.Collections;
 import java.util.Map;
 
 import static org.jetbrains.kotlin.js.translate.utils.AnnotationsUtils.*;
@@ -103,6 +105,11 @@ public final class StaticContext {
     @NotNull
     private final Config config;
 
+    @NotNull
+    private final Map<String, JsName> importedModules = new LinkedHashMap<String, JsName>();
+
+    private Map<String, JsName> importedModulesSafe;
+
     //TODO: too many parameters in constructor
     private StaticContext(@NotNull JsProgram program, @NotNull BindingTrace bindingTrace,
             @NotNull Namer namer, @NotNull Intrinsics intrinsics,
@@ -150,6 +157,14 @@ public final class StaticContext {
     @NotNull
     private JsScope getRootScope() {
         return rootScope;
+    }
+
+    @NotNull
+    public Map<String, JsName> getImportedModules() {
+        if (importedModulesSafe == null) {
+            importedModulesSafe = Collections.unmodifiableMap(importedModules);
+        }
+        return importedModulesSafe;
     }
 
     @NotNull
@@ -515,6 +530,13 @@ public final class StaticContext {
                         return null;
                     }
 
+                    JsName moduleId = importedModules.get(moduleName);
+                    if (moduleId == null) {
+                        moduleId = rootScope.declareFreshName(suggestedModuleName(moduleName));
+                        importedModules.put(moduleName, moduleId);
+                    }
+                    // TODO: use just generated moduleId to refer to module. This requires to rewrite how JS module is written
+
                     return JsAstUtils.replaceRootReference(
                             result, namer.getModuleReference(program.getStringLiteral(moduleName)));
                 }
@@ -612,6 +634,32 @@ public final class StaticContext {
             addRule(nestedClassesHaveContainerQualifier);
             addRule(localClassesHavePackageQualifier);
         }
+    }
+
+    private static String suggestedModuleName(String id) {
+        if (id.isEmpty()) {
+            return "_";
+        }
+
+        StringBuilder sb = new StringBuilder(id.length());
+        char c = id.charAt(0);
+        if (Character.isJavaIdentifierStart(c)) {
+            sb.append(c);
+        }
+        else {
+            sb.append('_');
+            if (Character.isJavaIdentifierPart(c)) {
+                sb.append(c);
+            }
+        }
+
+        sb.append(Character.isJavaIdentifierStart(c) ? c : '_');
+        for (int i = 1; i < id.length(); ++i) {
+            c = id.charAt(i);
+            sb.append(Character.isJavaIdentifierPart(c) ? c : '_');
+        }
+
+        return sb.toString();
     }
 
     @Nullable

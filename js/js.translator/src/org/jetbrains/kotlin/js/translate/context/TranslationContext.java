@@ -93,6 +93,11 @@ public class TranslationContext {
         }
     }
 
+    @NotNull
+    public Map<String, JsName> getImportedModules() {
+        return staticContext.getImportedModules();
+    }
+
     @Nullable
     public UsageTracker usageTracker() {
         return usageTracker;

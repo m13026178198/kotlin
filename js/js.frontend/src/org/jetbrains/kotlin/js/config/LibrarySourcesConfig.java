@@ -32,6 +32,7 @@ import org.jetbrains.annotations.Nullable;
 import org.jetbrains.kotlin.idea.KotlinFileType;
 import org.jetbrains.kotlin.js.JavaScript;
 import org.jetbrains.kotlin.psi.KtFile;
+import org.jetbrains.kotlin.serialization.js.ModuleKind;
 import org.jetbrains.kotlin.utils.KotlinJavascriptMetadata;
 import org.jetbrains.kotlin.utils.KotlinJavascriptMetadataUtils;
 import org.jetbrains.kotlin.utils.LibraryUtils;
@@ -71,9 +72,10 @@ public class LibrarySourcesConfig extends Config {
             boolean inlineEnabled,
             boolean isUnitTestConfig,
             boolean metaInfo,
-            boolean kjsm
+            boolean kjsm,
+            @NotNull ModuleKind moduleKind
     ) {
-        super(project, moduleId, ecmaVersion, sourceMap, inlineEnabled, metaInfo, kjsm);
+        super(project, moduleId, ecmaVersion, sourceMap, inlineEnabled, metaInfo, kjsm, moduleKind);
         this.files = files;
         this.isUnitTestConfig = isUnitTestConfig;
     }
@@ -199,6 +201,7 @@ public class LibrarySourcesConfig extends Config {
         boolean isUnitTestConfig = false;
         boolean metaInfo = false;
         boolean kjsm = false;
+        @NotNull ModuleKind moduleKind = ModuleKind.PLAIN;
 
         public Builder(@NotNull Project project, @NotNull String moduleId, @NotNull List<String> files) {
             this.project = project;
@@ -236,12 +239,18 @@ public class LibrarySourcesConfig extends Config {
             return this;
         }
 
+        public Builder moduleKind(@NotNull ModuleKind moduleKind) {
+            this.moduleKind = moduleKind;
+            return this;
+        }
+
         public Config build() {
-            return new LibrarySourcesConfig(project, moduleId, files, ecmaVersion, sourceMap, inlineEnabled, isUnitTestConfig, metaInfo, kjsm);
+            return new LibrarySourcesConfig(project, moduleId, files, ecmaVersion, sourceMap, inlineEnabled, isUnitTestConfig, metaInfo,
+                                            kjsm, moduleKind);
         }
     }
 
-    protected static KtFile getJetFileByVirtualFile(VirtualFile file, String moduleName, PsiManager psiManager) {
+    private static KtFile getJetFileByVirtualFile(VirtualFile file, String moduleName, PsiManager psiManager) {
         PsiFile psiFile = psiManager.findFile(file);
         assert psiFile != null;
 
@@ -249,7 +258,7 @@ public class LibrarySourcesConfig extends Config {
         return (KtFile) psiFile;
     }
 
-    protected static void setupPsiFile(PsiFile psiFile, String moduleName) {
+    private static void setupPsiFile(PsiFile psiFile, String moduleName) {
         psiFile.putUserData(EXTERNAL_MODULE_NAME, moduleName);
     }
 
