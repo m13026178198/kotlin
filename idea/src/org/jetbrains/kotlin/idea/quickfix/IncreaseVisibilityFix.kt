@@ -54,17 +54,20 @@ class IncreaseVisibilityFix(
             val element = diagnostic.psiElement as? KtElement ?: return null
             val context = element.analyze(BodyResolveMode.PARTIAL)
             val usageModule = context.get(BindingContext.FILE_TO_PACKAGE_FRAGMENT, element.getContainingKtFile())?.module
-                              ?: return null
 
             @Suppress("UNCHECKED_CAST")
             val factory = diagnostic.factory as DiagnosticFactory3<*, DeclarationDescriptor, *, DeclarationDescriptor>
             val descriptor = factory.cast(diagnostic).c as? DeclarationDescriptorWithVisibility ?: return null
+            val declaration = DescriptorToSourceUtils.getSourceFromDescriptor(descriptor) as? KtModifierListOwner ?: return null
 
             val module = DescriptorUtils.getContainingModule(descriptor)
-            if (module != usageModule) return null
-            val declaration = DescriptorToSourceUtils.getSourceFromDescriptor(descriptor) as? KtModifierListOwner ?: return null
-            if (descriptor.visibility != Visibilities.PRIVATE) return null
-            return IncreaseVisibilityFix(declaration, descriptor.name.asString(), KtTokens.INTERNAL_KEYWORD)
+            val modifier = if (module != usageModule || descriptor.visibility != Visibilities.PRIVATE) {
+                KtTokens.PUBLIC_KEYWORD
+            }
+            else {
+                KtTokens.INTERNAL_KEYWORD
+            }
+            return IncreaseVisibilityFix(declaration, descriptor.name.asString(), modifier)
         }
     }
 }
