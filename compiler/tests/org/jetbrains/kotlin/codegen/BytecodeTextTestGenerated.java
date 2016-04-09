@@ -980,6 +980,39 @@ public class BytecodeTextTestGenerated extends AbstractBytecodeTextTest {
         }
     }
 
+    @TestMetadata("compiler/testData/codegen/bytecodeText/jack&jill")
+    @TestDataPath("$PROJECT_ROOT")
+    @RunWith(JUnit3RunnerWithInners.class)
+    public static class Jack_jill extends AbstractBytecodeTextTest {
+        public void testAllFilesPresentInJack_jill() throws Exception {
+            KotlinTestUtils.assertAllTestsPresentByMetadata(this.getClass(), new File("compiler/testData/codegen/bytecodeText/jack&jill"), Pattern.compile("^(.+)\\.kt$"), true);
+        }
+
+        @TestMetadata("inlineDefaultBody.kt")
+        public void testInlineDefaultBody() throws Exception {
+            String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/codegen/bytecodeText/jack&jill/inlineDefaultBody.kt");
+            doTest(fileName);
+        }
+
+        @TestMetadata("inlineDefaultBodyInClass.kt")
+        public void testInlineDefaultBodyInClass() throws Exception {
+            String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/codegen/bytecodeText/jack&jill/inlineDefaultBodyInClass.kt");
+            doTest(fileName);
+        }
+
+        @TestMetadata("inlinedConstuctor.kt")
+        public void testInlinedConstuctor() throws Exception {
+            String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/codegen/bytecodeText/jack&jill/inlinedConstuctor.kt");
+            doTest(fileName);
+        }
+
+        @TestMetadata("inlinedConstuctorWithSuperCallParams.kt")
+        public void testInlinedConstuctorWithSuperCallParams() throws Exception {
+            String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/codegen/bytecodeText/jack&jill/inlinedConstuctorWithSuperCallParams.kt");
+            doTest(fileName);
+        }
+    }
+
     @TestMetadata("compiler/testData/codegen/bytecodeText/lazyCodegen")
     @TestDataPath("$PROJECT_ROOT")
     @RunWith(JUnit3RunnerWithInners.class)
