@@ -4,7 +4,7 @@
 package kotlin.text
 
 /** Line separator for current system. */
-private val LINE_SEPARATOR: String by lazy { System.getProperty("line.separator")!! }
+private val LINE_SEPARATOR: String by lazy { System.getProperty("line.separator") ?: "\n" }
 
 /** Appends a line separator to this Appendable. */
 public fun Appendable.appendln(): Appendable = append(LINE_SEPARATOR)
