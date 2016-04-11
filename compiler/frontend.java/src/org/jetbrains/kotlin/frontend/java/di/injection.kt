@@ -1,5 +1,5 @@
 /*
- * Copyright 2010-2015 JetBrains s.r.o.
+ * Copyright 2010-2016 JetBrains s.r.o.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -53,6 +53,8 @@ fun StorageComponentContainer.configureJavaTopDownAnalysis(moduleContentScope: G
 
     useInstance(JvmVirtualFileFinderFactory.SERVICE.getInstance(project).create(moduleContentScope))
 
+    useImpl<FileScopeProviderImpl>()
+
     useImpl<JavaClassFinderImpl>()
     useImpl<SignaturePropagatorImpl>()
     useImpl<LazyResolveBasedCache>()
@@ -83,7 +85,6 @@ fun createContainerForLazyResolveWithJava(
 
     targetEnvironment.configure(this)
 
-    useImpl<FileScopeProviderImpl>()
     useImpl<LazyResolveToken>()
 }.apply {
     javaAnalysisInit()
@@ -108,7 +109,6 @@ fun createContainerForTopDownAnalyzerForJvm(
     CompilerEnvironment.configure(this)
 
     useImpl<SingleModuleClassResolver>()
-    useImpl<FileScopeProviderImpl>()
 }.let {
     it.javaAnalysisInit()
 

@@ -37,7 +37,6 @@ import org.jetbrains.kotlin.resolve.lazy.data.KtClassLikeInfo
 import org.jetbrains.kotlin.resolve.lazy.declarations.*
 import org.jetbrains.kotlin.resolve.lazy.descriptors.LazyScriptDescriptor
 import org.jetbrains.kotlin.resolve.scopes.ImportingScope
-import org.jetbrains.kotlin.resolve.scopes.LexicalScope
 import org.jetbrains.kotlin.resolve.scopes.utils.parentsWithSelf
 import org.jetbrains.kotlin.resolve.scopes.utils.replaceImportingScopes
 import org.jetbrains.kotlin.script.ScriptPriorities
@@ -103,8 +102,8 @@ class CliReplAnalyzerEngine(private val environment: KotlinCoreEnvironment) {
     }
 
     private fun doAnalyze(linePsi: KtFile): ReplLineAnalysisResult {
-        replState.submitLine(linePsi)
         scriptDeclarationFactory.setDelegateFactory(FileBasedDeclarationProviderFactory(resolveSession.storageManager, listOf(linePsi)))
+        replState.submitLine(linePsi)
 
         val context = topDownAnalyzer.analyzeDeclarations(topDownAnalysisContext.topDownAnalysisMode, listOf(linePsi))
 
@@ -177,7 +176,9 @@ class ReplState(
     private val successfulLines = arrayListOf<SuccessfulLine>()
 
     fun submitLine(ktFile: KtFile) {
-        lines[ktFile] = SubmittedLine(ktFile, successfulLines.lastOrNull())
+        val line = SubmittedLine(ktFile, successfulLines.lastOrNull())
+        lines[ktFile] = line
+        ktFile.customFileScopes = lineInfo(ktFile)?.fileScopesForThisLine
     }
 
     fun lineSuccess(ktFile: KtFile, scriptDescriptor: LazyScriptDescriptor) {
@@ -212,15 +213,4 @@ class ReplState(
     inner class SubmittedLine(override val linePsi: KtFile, override val parentLine: SuccessfulLine?) : LineInfo()
     inner class SuccessfulLine(override val linePsi: KtFile, override val parentLine: SuccessfulLine?, val lineDescriptor: LazyScriptDescriptor) : LineInfo()
     inner class FailedLine(override val linePsi: KtFile, override val parentLine: SuccessfulLine?) : LineInfo()
-}
-
-class ReplFileScopeProvider(
-        private val replState: ReplState,
-        private val fileScopeFactory: FileScopeFactory
-) : FileScopeProvider {
-    override fun getFileResolutionScope(file: KtFile): LexicalScope
-            = (replState.lineInfo(file)?.fileScopesForThisLine ?: fileScopeFactory.createScopesForFile(file)).lexicalScope
-
-    override fun getImportResolver(file: KtFile): ImportResolver =
-            (replState.lineInfo(file)?.fileScopesForThisLine ?: fileScopeFactory.createScopesForFile(file)).importResolver
 }
