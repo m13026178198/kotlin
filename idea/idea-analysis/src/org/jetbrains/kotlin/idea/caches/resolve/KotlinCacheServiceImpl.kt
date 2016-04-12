@@ -116,6 +116,20 @@ class KotlinCacheServiceImpl(val project: Project) : KotlinCacheService {
                 }
             }
 
+            syntheticFileModule is CustomizedScriptModuleInfo -> {
+                ProjectResolutionFacade(project) {
+                    globalResolveSessionProvider(
+                            debugName,
+                            project,
+                            targetPlatform,
+                            syntheticFiles = files,
+                            reuseDataFrom = librariesFacade(targetPlatform),
+                            moduleFilter = { true },
+                            dependencies = dependenciesForSyntheticFileCache
+                    )
+                }
+            }
+
             syntheticFileModule is LibrarySourceInfo || syntheticFileModule is NotUnderContentRootModuleInfo -> {
                 ProjectResolutionFacade(project) {
                     globalResolveSessionProvider(
