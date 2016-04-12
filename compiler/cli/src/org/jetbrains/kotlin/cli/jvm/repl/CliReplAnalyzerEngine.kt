@@ -169,16 +169,19 @@ class CliReplAnalyzerEngine(private val environment: KotlinCoreEnvironment) {
     }
 }
 
-class ReplState(
-        private val fileScopeFactory: FileScopeFactory
-) {
+//TODO_R: no longer component
+class ReplState {
     private val lines = hashMapOf<KtFile, LineInfo>()
     private val successfulLines = arrayListOf<SuccessfulLine>()
 
     fun submitLine(ktFile: KtFile) {
         val line = SubmittedLine(ktFile, successfulLines.lastOrNull())
         lines[ktFile] = line
-        ktFile.customFileScopes = lineInfo(ktFile)?.fileScopesForThisLine
+        ktFile.fileScopesMutator = object: FileScopesMutator {
+            override fun createFileScopes(fileScopeFactory: FileScopeFactory): FileScopes {
+                return lineInfo(ktFile)?.computeFileScopes(fileScopeFactory) ?: fileScopeFactory.createScopesForFile(ktFile)
+            }
+        }
     }
 
     fun lineSuccess(ktFile: KtFile, scriptDescriptor: LazyScriptDescriptor) {
@@ -197,9 +200,7 @@ class ReplState(
         abstract val linePsi: KtFile
         abstract val parentLine: SuccessfulLine?
 
-        val fileScopesForThisLine: FileScopes by lazy { computeFileScopes() }
-
-        fun computeFileScopes(): FileScopes {
+        fun computeFileScopes(fileScopeFactory: FileScopeFactory): FileScopes {
             // create scope that wraps previous line lexical scope and adds imports from this line
             val lexicalScopeAfterLastLine = parentLine?.lineDescriptor?.scopeForInitializerResolution
                                      ?: return fileScopeFactory.createScopesForFile(linePsi)

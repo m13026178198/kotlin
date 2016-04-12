@@ -219,6 +219,8 @@ private class LexicalScopeWrapper(val delegate: LexicalScope, val newImportingSc
             newImportingScopeChain
         }
     }
+
+    override fun toString() = kind.toString()
 }
 
 fun chainImportingScopes(scopes: List<ImportingScope>, tail: ImportingScope? = null): ImportingScope? {

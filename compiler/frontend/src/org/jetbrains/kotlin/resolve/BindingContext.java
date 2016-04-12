@@ -140,7 +140,7 @@ public interface BindingContext {
     WritableSlice<KtWhenExpression, Boolean> EXHAUSTIVE_WHEN = Slices.createSimpleSlice();
     WritableSlice<KtWhenExpression, Boolean> IMPLICIT_EXHAUSTIVE_WHEN = Slices.createSimpleSlice();
 
-    WritableSlice<KtElement, LexicalScope> LEXICAL_SCOPE = Slices.createSimpleSlice();
+    WritableSlice<KtElement, LexicalScope> LEXICAL_SCOPE = new BasicWritableSlice<KtElement, LexicalScope>(RewritePolicy.DO_NOTHING);
 
     WritableSlice<ScriptDescriptor, LexicalScope> SCRIPT_SCOPE = Slices.createSimpleSlice();
 

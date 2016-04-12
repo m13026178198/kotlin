@@ -19,6 +19,8 @@ package org.jetbrains.kotlin.resolve.lazy
 import com.intellij.openapi.util.Key
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.psi.UserDataProperty
+import org.jetbrains.kotlin.resolve.BindingTrace
+import org.jetbrains.kotlin.resolve.bindingContextUtil.recordScope
 import org.jetbrains.kotlin.resolve.scopes.LexicalScope
 
 abstract class FileScopeProvider {
@@ -32,8 +34,20 @@ abstract class FileScopeProvider {
     }
 }
 
-class FileScopeProviderImpl(private val fileScopeFactory: FileScopeFactory) : FileScopeProvider() {
-    override fun getFileScopes(file: KtFile) = file.customFileScopes ?: fileScopeFactory.createScopesForFile(file)
+class FileScopeProviderImpl(
+        private val fileScopeFactory: FileScopeFactory,
+        private val bindingTrace: BindingTrace
+) : FileScopeProvider() {
+    override fun getFileScopes(file: KtFile): FileScopes {
+        val scopes = (file.originalFile as KtFile?)?.fileScopesMutator?.let { it.createFileScopes(fileScopeFactory) } ?: fileScopeFactory.createScopesForFile(file)
+        bindingTrace.recordScope(scopes.lexicalScope, file)
+        return scopes
+    }
 }
 
-var KtFile.customFileScopes: FileScopes? by UserDataProperty(Key.create("CUSTOM_FILE_SCOPES"))
+//TODO_R: NAME
+interface FileScopesMutator {
+    fun createFileScopes(fileScopeFactory: FileScopeFactory): FileScopes
+}
+
+var KtFile.fileScopesMutator: FileScopesMutator? by UserDataProperty(Key.create("FILE_SCOPES_MUTATOR"))
