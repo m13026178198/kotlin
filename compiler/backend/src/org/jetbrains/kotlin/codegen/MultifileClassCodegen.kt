@@ -251,7 +251,7 @@ class MultifileClassCodegen(
             if (declaration is KtNamedFunction || declaration is KtProperty) {
                 val descriptor = state.bindingContext.get(BindingContext.DECLARATION_TO_DESCRIPTOR, declaration)
                 if (descriptor !is CallableMemberDescriptor) {
-                    throw AssertionError("Expected callable member, was " + descriptor + " for " + declaration.text)
+                    throw ExceptionLogger.logDescriptorNotFound("Declaration ${declaration.name} should have a callable descriptor:", declaration )
                 }
                 addDelegateGenerationTaskIfNeeded(descriptor, { memberCodegen.genFunctionOrProperty(declaration) })
             }
