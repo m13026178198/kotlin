@@ -11,6 +11,10 @@
 
 ### IDE
 
+### Java to Kotlin Converter
+
+- Do not generate super call to abstract property
+
 ## 1.0.2
 
 ### Compiler
