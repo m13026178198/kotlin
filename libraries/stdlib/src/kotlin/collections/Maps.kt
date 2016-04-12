@@ -80,9 +80,6 @@ public fun <K, V> linkedMapOf(vararg pairs: Pair<K, V>): LinkedHashMap<K, V>
  * to the Collection constructor for HashSet, (c.size()/.75f) + 1, but provides further optimisations for very small or
  * very large sizes, allows support non-collection classes, and provides consistency for all map based class construction.
  */
-
-private val INT_MAX_POWER_OF_TWO: Int = Int.MAX_VALUE / 2 + 1
-
 @kotlin.internal.InlineExposed
 internal fun mapCapacity(expectedSize: Int): Int {
     if (expectedSize < 3) {
@@ -93,6 +90,9 @@ internal fun mapCapacity(expectedSize: Int): Int {
     }
     return Int.MAX_VALUE // any large value
 }
+
+// TODO: Make private after KT-11645 is fixed
+internal const val INT_MAX_POWER_OF_TWO: Int = Int.MAX_VALUE / 2 + 1
 
 /** Returns `true` if this map is not empty. */
 @kotlin.internal.InlineOnly
