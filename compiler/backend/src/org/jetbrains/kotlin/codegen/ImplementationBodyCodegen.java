@@ -49,7 +49,6 @@ import org.jetbrains.kotlin.psi.*;
 import org.jetbrains.kotlin.resolve.BindingContext;
 import org.jetbrains.kotlin.resolve.DescriptorToSourceUtils;
 import org.jetbrains.kotlin.resolve.DescriptorUtils;
-import org.jetbrains.kotlin.resolve.calls.callResolverUtil.CallResolverUtilKt;
 import org.jetbrains.kotlin.resolve.calls.callUtil.CallUtilKt;
 import org.jetbrains.kotlin.resolve.calls.model.DefaultValueArgument;
 import org.jetbrains.kotlin.resolve.calls.model.ExpressionValueArgument;
@@ -411,32 +410,48 @@ public class ImplementationBodyCodegen extends ClassBodyCodegen {
         }
     }
 
-    private boolean isGenericToArrayPresent() {
-        Collection<SimpleFunctionDescriptor> functions =
-                descriptor.getDefaultType().getMemberScope().getContributedFunctions(Name.identifier("toArray"), NoLookupLocation.FROM_BACKEND);
+    private boolean isToArrayPresent(boolean generic) {
+        Collection<SimpleFunctionDescriptor> functions = descriptor.getDefaultType().getMemberScope().getContributedFunctions(
+                Name.identifier("toArray"), NoLookupLocation.FROM_BACKEND
+        );
         for (FunctionDescriptor function : functions) {
-            if (CallResolverUtilKt.isOrOverridesSynthesized(function)) {
-                continue;
+            if (!generic) {
+                if (isNonGenericToArray(function)) return true;
             }
-
-            if (function.getValueParameters().size() != 1 || function.getTypeParameters().size() != 1) {
-                continue;
-            }
-
-            KotlinType returnType = function.getReturnType();
-            assert returnType != null : function.toString();
-            KotlinType paramType = function.getValueParameters().get(0).getType();
-            if (KotlinBuiltIns.isArray(returnType) && KotlinBuiltIns.isArray(paramType)) {
-                KotlinType elementType = function.getTypeParameters().get(0).getDefaultType();
-                if (KotlinTypeChecker.DEFAULT.equalTypes(elementType, DescriptorUtilsKt.getBuiltIns(descriptor).getArrayElementType(returnType))
-                    && KotlinTypeChecker.DEFAULT.equalTypes(elementType, DescriptorUtilsKt
-                        .getBuiltIns(descriptor).getArrayElementType(paramType))) {
-                    return true;
-                }
+            else {
+                if (isGenericToArray(function)) return true;
             }
         }
         return false;
+    }
 
+    private boolean isGenericToArray(@NotNull FunctionDescriptor function) {
+        if (function.getValueParameters().size() != 1 || function.getTypeParameters().size() != 1) {
+            return false;
+        }
+
+        KotlinType returnType = function.getReturnType();
+        assert returnType != null : function.toString();
+        KotlinType paramType = function.getValueParameters().get(0).getType();
+        if (KotlinBuiltIns.isArray(returnType) && KotlinBuiltIns.isArray(paramType)) {
+            KotlinType elementType = function.getTypeParameters().get(0).getDefaultType();
+            KotlinBuiltIns builtIns = DescriptorUtilsKt.getBuiltIns(descriptor);
+            if (KotlinTypeChecker.DEFAULT.equalTypes(elementType, builtIns.getArrayElementType(returnType))
+                && KotlinTypeChecker.DEFAULT.equalTypes(elementType, builtIns.getArrayElementType(paramType))) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static boolean isNonGenericToArray(@NotNull FunctionDescriptor function) {
+        if (!function.getValueParameters().isEmpty() || !function.getTypeParameters().isEmpty()) {
+            return false;
+        }
+
+        KotlinType returnType = function.getReturnType();
+        return returnType != null && KotlinBuiltIns.isArray(returnType);
     }
 
     private void generateToArray() {
@@ -446,7 +461,7 @@ public class ImplementationBodyCodegen extends ClassBodyCodegen {
         int access = descriptor.getKind() == ClassKind.INTERFACE ?
                      ACC_PUBLIC | ACC_ABSTRACT :
                      ACC_PUBLIC;
-        if (CodegenUtil.getDeclaredFunctionByRawSignature(descriptor, Name.identifier("toArray"), builtIns.getArray()) == null) {
+        if (!isToArrayPresent(/* generic = */ false)) {
             MethodVisitor mv = v.newMethod(NO_ORIGIN, access, "toArray", "()[Ljava/lang/Object;", null, null);
 
             if (descriptor.getKind() != ClassKind.INTERFACE) {
@@ -461,7 +476,7 @@ public class ImplementationBodyCodegen extends ClassBodyCodegen {
             }
         }
 
-        if (!isGenericToArrayPresent()) {
+        if (!isToArrayPresent(/* generic = */ true)) {
             MethodVisitor mv = v.newMethod(NO_ORIGIN, access, "toArray", "([Ljava/lang/Object;)[Ljava/lang/Object;", null, null);
 
             if (descriptor.getKind() != ClassKind.INTERFACE) {
