@@ -23,7 +23,6 @@ import org.jetbrains.kotlin.diagnostics.Errors;
 import org.jetbrains.kotlin.psi.KtDeclaration;
 import org.jetbrains.kotlin.psi.KtElement;
 import org.jetbrains.kotlin.psi.KtExpression;
-import org.jetbrains.kotlin.psi.KtNamedDeclaration;
 import org.jetbrains.kotlin.types.KotlinType;
 
 import static org.jetbrains.kotlin.diagnostics.PositioningStrategies.*;
