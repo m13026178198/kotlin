@@ -138,7 +138,7 @@ class KotlinCoreEnvironment private constructor(
             }
         })
 
-        KotlinScriptDefinitionProvider.getInstance(project).setScriptDefinitions(configuration.getList(CommonConfigurationKeys.SCRIPT_DEFINITIONS_KEY))
+        KotlinScriptDefinitionProvider.getInstance(project).scriptDefinitions = configuration.getList(CommonConfigurationKeys.SCRIPT_DEFINITIONS_KEY)
 
         project.registerService(JvmVirtualFileFinderFactory::class.java, JvmCliVirtualFileFinderFactory(index))
 
