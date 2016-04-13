@@ -252,7 +252,7 @@ public final class StaticContext {
                 }
             };
 
-            Rule<JsName> localDeclarations = new Rule<JsName>() {
+            Rule<JsName> localClasses = new Rule<JsName>() {
                 @Nullable
                 @Override
                 public JsName apply(@NotNull DeclarationDescriptor descriptor) {
@@ -291,7 +291,7 @@ public final class StaticContext {
                     return scope.declareFreshName(getSuggestedName(descriptor));
                 }
             };
-            Rule<JsName> constructorOrCompanionObjectHasTheSameNameAsTheClass = new Rule<JsName>() {
+            Rule<JsName> constructorOrNativeCompanionObjectHasTheSameNameAsTheClass = new Rule<JsName>() {
                 @Override
                 public JsName apply(@NotNull DeclarationDescriptor descriptor) {
                     if (descriptor instanceof ConstructorDescriptor && ((ConstructorDescriptor) descriptor).isPrimary() ||
@@ -385,9 +385,9 @@ public final class StaticContext {
             };
 
             addRule(namesForDynamic);
-            addRule(localDeclarations);
+            addRule(localClasses);
             addRule(namesForStandardClasses);
-            addRule(constructorOrCompanionObjectHasTheSameNameAsTheClass);
+            addRule(constructorOrNativeCompanionObjectHasTheSameNameAsTheClass);
             addRule(propertyOrPropertyAccessor);
             addRule(predefinedObjectsHasUnobfuscatableNames);
             addRule(overridingDescriptorsReferToOriginalName);
@@ -573,7 +573,7 @@ public final class StaticContext {
                     if (!(descriptor instanceof ClassDescriptor)) {
                         return null;
                     }
-                    DeclarationDescriptor container = getEnclosing(descriptor.getContainingDeclaration());
+                    DeclarationDescriptor container = DescriptorUtils.getParentOfType(descriptor, ClassDescriptor.class);
                     if (container == null) {
                         return null;
                     }
@@ -593,11 +593,8 @@ public final class StaticContext {
                         return null;
                     }
 
-                    descriptor = descriptor.getContainingDeclaration();
-                    while (descriptor != null && !(descriptor instanceof ClassOrPackageFragmentDescriptor)) {
-                        descriptor = descriptor.getContainingDeclaration();
-                    }
-                    if (!(descriptor instanceof PackageFragmentDescriptor)) return null;
+                    descriptor = DescriptorUtils.getParentOfType(descriptor, PackageFragmentDescriptor.class, true);
+                    if (descriptor == null) return null;
 
                     return getQualifiedReference(descriptor);
                 }
@@ -612,14 +609,6 @@ public final class StaticContext {
             addRule(nestedClassesHaveContainerQualifier);
             addRule(localClassesHavePackageQualifier);
         }
-    }
-
-    @Nullable
-    private static ClassDescriptor getEnclosing(@Nullable DeclarationDescriptor descriptor) {
-        while (descriptor != null && !(descriptor instanceof ClassDescriptor)) {
-            descriptor = descriptor.getContainingDeclaration();
-        }
-        return (ClassDescriptor) descriptor;
     }
 
     private static JsExpression applySideEffects(JsExpression expression, DeclarationDescriptor descriptor) {
