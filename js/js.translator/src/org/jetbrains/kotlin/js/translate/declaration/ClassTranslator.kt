@@ -151,88 +151,6 @@ class ClassTranslator private constructor(
         this.primaryConstructor = ConstructorInfo(initializer, constructorContext, descriptor)
     }
 
-    private fun generateSecondaryConstructor(classContext: TranslationContext, constructor: KtSecondaryConstructor) {
-        // Prepare
-        val constructorDescriptor = BindingUtils.getDescriptorForElement(classContext.bindingContext(), constructor) as ConstructorDescriptor
-        val classDescriptor = constructorDescriptor.containingDeclaration
-
-        val constructorScope = classContext.getScopeForDescriptor(constructorDescriptor)
-        var context = classContext.innerWithUsageTracker(constructorScope, constructorDescriptor)
-
-        val thisName = constructorScope.declareName(Namer.ANOTHER_THIS_PARAMETER_NAME)
-        val thisNameRef = thisName.makeRef()
-        val receiverDescriptor = classDescriptor.thisAsReceiverParameter
-
-        context = context.newDeclaration(constructorDescriptor.containingDeclaration, context.definitionPlace)
-        context = context.newDeclaration(constructorDescriptor, context.definitionPlace)
-        context = context.innerContextWithAliased(receiverDescriptor, thisNameRef)
-
-        val outerName = context.getOuterClassReference(classDescriptor);
-        val outerClass = DescriptorUtils.getContainingClass(classDescriptor)
-        if (outerClass != null && outerName != null) {
-            val outerClassRef = outerClass.thisAsReceiverParameter
-            context = context.innerContextWithAliased(outerClassRef, outerName.makeRef())
-        }
-
-        // Translate constructor body
-        val constructorInitializer = FunctionTranslator.newInstance(constructor, context).translateAsMethod()
-        val constructorFunction = constructorInitializer.valueExpr as JsFunction
-
-        // Translate super/this call
-        val superCallGenerators = mutableListOf<(MutableList<JsStatement>) -> Unit>()
-        val referenceToClass = context.getQualifiedReference(classDescriptor)
-
-        superCallGenerators += { it += FunctionBodyTranslator.setDefaultValueForArguments(constructorDescriptor, context) }
-
-        val createInstance = Namer.createObjectWithPrototypeFrom(referenceToClass)
-        val instanceVar = JsAstUtils.assignment(thisNameRef, JsAstUtils.or(thisNameRef, createInstance)).makeStmt()
-        superCallGenerators += { it += instanceVar }
-
-        // Add parameter for outer instance
-        val leadingArgs = mutableListOf<JsExpression>()
-
-        if (outerName != null) {
-            constructorFunction.parameters.add(0, JsParameter(outerName))
-            leadingArgs += outerName.makeRef()
-        }
-
-        constructorFunction.parameters += JsParameter(thisName)
-
-        // Generate super/this call to insert to beginning of the function
-        val resolvedCall = BindingContextUtils.getDelegationConstructorCall(context.bindingContext(), constructorDescriptor)
-        val delegationClassDescriptor = resolvedCall?.resultingDescriptor?.containingDeclaration
-
-        if (resolvedCall != null && !KotlinBuiltIns.isAny(delegationClassDescriptor!!)) {
-            superCallGenerators += {
-                it += CallTranslator.translate(context, resolvedCall).toInvocationWith(leadingArgs, thisNameRef).makeStmt()
-            }
-        }
-
-        val delegationCtorInTheSameClass = delegationClassDescriptor == classDescriptor
-        if (!delegationCtorInTheSameClass && !classDescriptor.hasPrimaryConstructor()) {
-            superCallGenerators += {
-                val usageTracker = context.usageTracker()!!
-                val closure = context.getLocalClassClosure(classDescriptor).orEmpty().map {
-                    usageTracker.capturedDescriptorToJsName[it]?.makeRef() as? JsExpression ?: JsLiteral.NULL
-                }
-                it += JsInvocation(Namer.getFunctionCallRef(referenceToClass), listOf(thisNameRef) + closure + leadingArgs).makeStmt()
-            }
-        }
-
-        constructorFunction.body.statements += JsReturn(thisNameRef)
-
-        val compositeSuperCallGenerator: () -> Unit = {
-            val additionalStatements = mutableListOf<JsStatement>()
-            for (partGenerator in superCallGenerators) {
-                partGenerator(additionalStatements)
-            }
-            constructorFunction.body.statements.addAll(0, additionalStatements)
-        }
-
-        secondaryConstructors += ConstructorInfo(constructorFunction, context, constructorDescriptor, compositeSuperCallGenerator)
-        secondaryConstructorProperties += constructorInitializer
-    }
-
     private val allConstructors: Sequence<ConstructorInfo>
         get() {
             val primary = primaryConstructor
@@ -430,6 +348,88 @@ class ClassTranslator private constructor(
     }
 
     class TranslationResult(val properties: List<JsPropertyInitializer>, val definitionPlace: DefinitionPlace)
+
+        private fun generateSecondaryConstructor(classContext: TranslationContext, constructor: KtSecondaryConstructor) {
+            // Prepare
+            val constructorDescriptor = BindingUtils.getDescriptorForElement(classContext.bindingContext(), constructor) as ConstructorDescriptor
+            val classDescriptor = constructorDescriptor.containingDeclaration
+
+            val constructorScope = classContext.getScopeForDescriptor(constructorDescriptor)
+            var context = classContext.innerWithUsageTracker(constructorScope, constructorDescriptor)
+
+            val thisName = constructorScope.declareName(Namer.ANOTHER_THIS_PARAMETER_NAME)
+            val thisNameRef = thisName.makeRef()
+            val receiverDescriptor = classDescriptor.thisAsReceiverParameter
+
+            context = context.newDeclaration(constructorDescriptor.containingDeclaration, context.definitionPlace)
+            context = context.newDeclaration(constructorDescriptor, context.definitionPlace)
+            context = context.innerContextWithAliased(receiverDescriptor, thisNameRef)
+
+            val outerName = context.getOuterClassReference(classDescriptor);
+            val outerClass = DescriptorUtils.getContainingClass(classDescriptor)
+            if (outerClass != null && outerName != null) {
+                val outerClassRef = outerClass.thisAsReceiverParameter
+                context = context.innerContextWithAliased(outerClassRef, outerName.makeRef())
+            }
+
+            // Translate constructor body
+            val constructorInitializer = FunctionTranslator.newInstance(constructor, context).translateAsMethod()
+            val constructorFunction = constructorInitializer.valueExpr as JsFunction
+
+            // Translate super/this call
+            val superCallGenerators = mutableListOf<(MutableList<JsStatement>) -> Unit>()
+            val referenceToClass = context.getQualifiedReference(classDescriptor)
+
+            superCallGenerators += { it += FunctionBodyTranslator.setDefaultValueForArguments(constructorDescriptor, context) }
+
+            val createInstance = Namer.createObjectWithPrototypeFrom(referenceToClass)
+            val instanceVar = JsAstUtils.assignment(thisNameRef, JsAstUtils.or(thisNameRef, createInstance)).makeStmt()
+            superCallGenerators += { it += instanceVar }
+
+            // Add parameter for outer instance
+            val leadingArgs = mutableListOf<JsExpression>()
+
+            if (outerName != null) {
+                constructorFunction.parameters.add(0, JsParameter(outerName))
+                leadingArgs += outerName.makeRef()
+            }
+
+            constructorFunction.parameters += JsParameter(thisName)
+
+            // Generate super/this call to insert to beginning of the function
+            val resolvedCall = BindingContextUtils.getDelegationConstructorCall(context.bindingContext(), constructorDescriptor)
+            val delegationClassDescriptor = resolvedCall?.resultingDescriptor?.containingDeclaration
+
+            if (resolvedCall != null && !KotlinBuiltIns.isAny(delegationClassDescriptor!!)) {
+                superCallGenerators += {
+                    it += CallTranslator.translate(context, resolvedCall).toInvocationWith(leadingArgs, thisNameRef).makeStmt()
+                }
+            }
+
+            val delegationCtorInTheSameClass = delegationClassDescriptor == classDescriptor
+            if (!delegationCtorInTheSameClass && !classDescriptor.hasPrimaryConstructor()) {
+                superCallGenerators += {
+                    val usageTracker = context.usageTracker()!!
+                    val closure = context.getLocalClassClosure(classDescriptor).orEmpty().map {
+                        usageTracker.capturedDescriptorToJsName[it]?.makeRef() as? JsExpression ?: JsLiteral.NULL
+                    }
+                    it += JsInvocation(Namer.getFunctionCallRef(referenceToClass), listOf(thisNameRef) + closure + leadingArgs).makeStmt()
+                }
+            }
+
+            constructorFunction.body.statements += JsReturn(thisNameRef)
+
+            val compositeSuperCallGenerator: () -> Unit = {
+                val additionalStatements = mutableListOf<JsStatement>()
+                for (partGenerator in superCallGenerators) {
+                    partGenerator(additionalStatements)
+                }
+                constructorFunction.body.statements.addAll(0, additionalStatements)
+            }
+
+            secondaryConstructors += ConstructorInfo(constructorFunction, context, constructorDescriptor, compositeSuperCallGenerator)
+            secondaryConstructorProperties += constructorInitializer
+        }
 
     private class ConstructorInfo(
             val function: JsFunction,
