@@ -168,7 +168,7 @@ public final class ClosureTest extends SingleFileTranslationTest {
         checkFooBoxIsOk();
     }
 
-    public void testLocalConstructorAndMethod() throws Exception {
+    public void testConstructorAndMethodOfLocalClass() throws Exception {
         checkFooBoxIsOk();
     }
 }
