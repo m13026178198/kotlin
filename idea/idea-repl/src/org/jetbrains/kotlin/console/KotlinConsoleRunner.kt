@@ -276,12 +276,15 @@ class KotlinConsoleRunner(
             val scriptDescriptor = psiFile.script!!.resolveToDescriptor() as LazyScriptDescriptor
             ForceResolveUtil.forceResolveAllContents(scriptDescriptor)
             replState.lineSuccess(psiFile, scriptDescriptor)
-            val consoleFile = consoleView.virtualFile
-            val jetFile = PsiManager.getInstance(project).findFile(consoleFile) as? KtFile ?: return
-            replState.submitLine(jetFile)
-
+            replState.submitLine(consoleFile)
         }
     }
+
+    val consoleFile: KtFile
+        get() {
+            val consoleFile = consoleView.virtualFile
+            return PsiManager.getInstance(project).findFile(consoleFile) as KtFile
+        }
 }
 
 fun createScriptFile(virtualFile: VirtualFile, project: Project): PsiFile {
